@@ -1,48 +1,112 @@
 #!usr/bin/env python3
 # -*- coding: utf-8 -*-
-import numpy as np
-import os
-from scipy.spatial.distance import cdist
 
-from biopandas.pdb import PandasPdb
+import os
+import time
+from scipy.spatial.distance import cdist
+from itertools import combinations, combinations_with_replacement
+from multiprocessing import Pool
+
+import numpy as np
+
 import pandas as pd
 
-def CloudSimilarity(MatA, MatB, sigma):
-    """
-    adjusted sum of all pair of atoms between two atom clouds
-    """
-    SumDist = np.sum(np.exp(-cdist(MatA, MatB)/2*sigma*sigma))
-    return SumDist
+class Calculator():
 
-def CalDist(TargetPDB, ReferencePDB, sigma):
-    """
-    Distance of two molecules in PDB files
-    """
+    def __init__(self, DATDir, OutCSV) -> None:
+        
+        # fixed parameters
+        self.l = 0.1 # charge param
+        self.sigma = 0.1 # shape param
+        self.OutCSV = OutCSV
+        self.DATDir = DATDir
+        
+        # Allele combinations
+        DATList = [a.split(".")[0] for a in sorted(os.listdir(DATDir))]
+        self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
+        self.AlleleComb_wo = combinations(DATList, 2)
+        
+        # Distance matrix for output, in lower triangular form
+        self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
 
-    TCoord = PandasPdb().read_pdb(TargetPDB).df["ATOM"][["x_coord", "y_coord", "z_coord"]]
-    RCoord = PandasPdb().read_pdb(ReferencePDB).df["ATOM"][["x_coord", "y_coord", "z_coord"]]
+    def CloudSimilarity(self, CoordA, ChargeA, CoordB, ChargeB):
+        """
+        adjusted sum of all pair of atoms between two atom clouds
+        """
+        # spatial only
+        SimScore = np.sum(np.exp(-cdist(CoordA, CoordB)/2*self.sigma*self.sigma))
 
-    Dist = np.sqrt(CloudSimilarity(TCoord, TCoord, sigma)
-                   +CloudSimilarity(RCoord, RCoord, sigma)
-                   -2*CloudSimilarity(TCoord, RCoord, sigma))
+        # spatial + electrostatic
+        # SimScore = np.sum(np.exp(-cdist(ChargeA, ChargeB, "cityblock")**2/self.l) * np.exp(-cdist(CoordA, CoordB)/2*self.sigma*self.sigma))
 
-    return Dist
+        return SimScore
 
-#print(CalDist("Aligned/A01_03S_0099_trim_align.pdb", "1i4f_Crown.pdb", 0.1))
+    def ParamExtract(self, DATFile):
+        DAT = pd.read_csv(DATFile)
+        coord = DAT[['X', 'Y', 'Z']].values
+        charge = DAT['Charge'].values.reshape((-1,1))
+        return coord, charge
+
+    def CalcSim(self, comb):
+        print(f"Simi: {comb}")
+        
+        CoordA, ChargeA = self.ParamExtract(f"{self.DATDir}/{comb[0]}.csv")
+        CoordB, ChargeB = self.ParamExtract(f"{self.DATDir}/{comb[1]}.csv")
+        
+        return (comb, self.CloudSimilarity(CoordA, ChargeA, CoordB, ChargeB))
+
+    def CalcDist(self):
+        """
+        Distance of two molecules in PDB files
+        """
+        # Similarity score of two alleles
+        SimilarityMat = {}
+        """
+        for comb in self.AlleleComb_wi:
+            SimilarityMat[comb] = self.CalcSim(comb)
+            SimilarityMat[comb] = pool.apply_async(self.CalcSim, comb)
+        """
+        pool = Pool(os.cpu_count())
+
+        result = pool.map(self.CalcSim, self.AlleleComb_wi)
+        
+        pool.close()
+        pool.join()
+        
+        for i in result:
+            SimilarityMat[i[0]] = i[1]
+        
+        # Distance between two alleles, derived from similarity score
+
+        for comb in self.AlleleComb_wo:
+            print(f"Dist: {comb}")
+            distance = np.sqrt(SimilarityMat[(comb[0], comb[0])] + SimilarityMat[(comb[1], comb[1])] - 2 * SimilarityMat[comb])
+            self.DistMat.loc[comb[1],comb[0]] = distance
+
+        return
+
+    def SaveDist(self):
+        
+        self.DistMat.to_csv(self.OutCSV)
+        
+        return
 
 def main():
-    RefPanel = os.listdir("reference_panel")
-    TargetPDBs = os.listdir("Aligned")
-    ScoreList = []
-    for target in TargetPDBs:
-        AlleleScore = []
-        for Ref in RefPanel:
-            AlleleScore.append(CalDist(f"Aligned/{target}", f"reference_panel/{Ref}", 0.1))
+    DATDir = "HLAB_DAT"
+    OutCSV = "HLAB_distance_s.csv"
+    # DATDir = "test"
+    # OutCSV = "test.csv"
+    calc = Calculator(DATDir, OutCSV)
+    # t1 = time.time()
+    # x = threading.Thread(target=calc.CalcDist(), args=(1,))
+    # x.start()
+    calc.CalcDist()
+    # pool = Pool(os.cpu_count())
+    # pool.map(calc.CalcDist(), 1)
+    # t2 = time.time()
+    # print(t2-t1, "seconds")
 
-        ScoreList.append(AlleleScore)
-
-    df = pd.DataFrame(ScoreList, columns=RefPanel)
-    df.to_csv("distance.csv")
+    calc.SaveDist()
     return
 
 main()
