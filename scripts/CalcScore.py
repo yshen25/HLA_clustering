@@ -52,8 +52,8 @@ class Calculator():
         # New kernel: spatial + electrostatic
         # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1))
 
-        # New kernel: spatial + electrostatic + bed residues
-        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1))
+        # New kernel: spatial + electrostatic + residue weight
+        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
 
         # New kernel: spatial + electrostatic + depth to groove
         # SimScore = np.sum( np.reciprocal(np.cosh(5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * 1/(1 + np.exp(-(np.outer(DepthA,DepthB) - 3))) )
@@ -72,7 +72,7 @@ class Calculator():
 
     def AssignWeight(self, resnum, WeightDict):
         weight = []
-        for i in resnum:
+        for i in resnum.reshape(-1):
             if i in WeightDict:
                 weight.append(WeightDict[i])
 
@@ -108,12 +108,14 @@ class Calculator():
         if self.OnlyGroove:
             passA = GrooveA == 1
             passA = passA.reshape(-1)
+            resnumA = resnumA[passA]
             CoordA = CoordA[passA]
             ChargeA = ChargeA[passA]
             DepthA = DepthA[passA]
 
             passB = GrooveB == 1
             passB = passB.reshape(-1)
+            resnumB = resnumB[passB]
             CoordB = CoordB[passB]
             ChargeB = ChargeB[passB]
             DepthB = DepthB[passB]
@@ -121,22 +123,28 @@ class Calculator():
         if self.depth_cut:
             passA = DepthA <= self.depth_cut
             passA = passA.reshape(-1)
+            resnumA = resnumA[passA]
             CoordA = CoordA[passA]
             ChargeA = ChargeA[passA]
             DepthA = DepthA[passA]
 
             passB = DepthB <= self.depth_cut
             passB = passB.reshape(-1)
+            resnumB = resnumB[passB]
             CoordB = CoordB[passB]
             ChargeB = ChargeB[passB]
             DepthB = DepthB[passB]
 
         # weigh atoms
         if self.Weight:
-            WeightDict = {value : key for key, value in self.Weight} # invert keys and values
+
+            # invert keys and values
+            WeightDict = {}
+            for key, values in self.Weight.items():
+                for v in values:
+                    WeightDict[v] = key
             WeightA = self.AssignWeight(resnumA, WeightDict)
             WeightB = self.AssignWeight(resnumB, WeightDict)
-
         
         return (comb, self.CloudSimilarity(CoordA, ChargeA, CoordB, ChargeB, DepthA, DepthB, WeightA, WeightB))
 
