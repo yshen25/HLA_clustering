@@ -8,7 +8,7 @@ from itertools import combinations, combinations_with_replacement
 from multiprocessing import Pool
 
 import numpy as np
-from scipy.stats import hypsecant
+# from scipy.stats import hypsecant
 
 import pandas as pd
 
@@ -49,11 +49,14 @@ class Calculator():
         # spatial + electrostatic + depth to groove
         # SimScore = np.sum(np.exp(np.reciprocal(np.outer(DepthA,DepthB))*self.d) * np.exp(-cdist(ChargeA, ChargeB, "euclidean")**2*self.l) * np.exp(-cdist(CoordA, CoordB, "euclidean")**2*0.5*self.sigma))
 
+        # New kernel: spatial
+        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1))
+
         # New kernel: spatial + electrostatic
         # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1))
 
         # New kernel: spatial + electrostatic + residue weight
-        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
+        # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
 
         # New kernel: spatial + electrostatic + depth to groove
         # SimScore = np.sum( np.reciprocal(np.cosh(5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * 1/(1 + np.exp(-(np.outer(DepthA,DepthB) - 3))) )
@@ -145,6 +148,10 @@ class Calculator():
                     WeightDict[v] = key
             WeightA = self.AssignWeight(resnumA, WeightDict)
             WeightB = self.AssignWeight(resnumB, WeightDict)
+
+        else:
+            WeightA = np.ones_like(resnumA)
+            WeightB = np.ones_like(resnumB)
         
         return (comb, self.CloudSimilarity(CoordA, ChargeA, CoordB, ChargeB, DepthA, DepthB, WeightA, WeightB))
 

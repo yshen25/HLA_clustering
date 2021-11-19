@@ -231,6 +231,9 @@ def PDB_to_csv(InDir, OutDir):
     with open('pep_surf.pkl', 'rb') as inf:
         pep = pickle.load(inf)
 
+    if not os.path.exists(OutDir):
+        os.makedirs(OutDir)
+
     for InPDB in os.listdir(InDir):
         print(InPDB)
         OutList = []
@@ -351,21 +354,18 @@ if __name__ == "__main__":
     # PDB_to_csv("HLAA_relax/ALIGN", "HLAA_relax/DAT")
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
     # PDB_to_csv("crystal/A_mean/pdb", "crystal/A_mean/DAT")
-    PDB_to_csv("crystal/B_mean/pdb", "crystal/B_mean/DAT")
+    # PDB_to_csv("crystal/B_mean/pdb", "crystal/B_mean/DAT")
 
-    # PDB_preprocess("HLAA_pdbs", "1i4f_Crown.pdb", "HLAA_Trimmed", "HLAA_Aligned", "HLAA_trim.csv")
-    # PDB_preprocess("HLAB_pdbs", "1i4f_Crown.pdb", "HLAB_Trimmed", "HLAB_Aligned", "HLAB_trim.csv")
-    # PDB_to_csv("HLAA_Aligned", "HLAA_DAT")
-    # PDB_to_csv("HLAB_Aligned", "HLAB_DAT")
-    # CP_template("HLAA_DAT", "HLAA_reference_panel/DAT")
-    # CP_template("HLAB_DAT", "HLAB_reference_panel/DAT")
+    # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
+    # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
+    # PDB_to_csv("../HLAA_Aligned", "../HLAA_DAT")
+    # # PDB_to_csv("../HLAB_Aligned", "../HLAB_DAT")
+    # CP_template("../HLAA_DAT", "../HLAA_reference_panel/DAT")
+    # CP_template("../HLAB_DAT", "../HLAB_reference_panel/DAT")
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
+    for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
+    # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
+        PDB_preprocess(f"crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+    
     pass
-
-# for allele in ["A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
-# for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
-#     PDB_preprocess(f"crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"crystal/{allele}/TRIM2", f"crystal/{allele}/ALIGN2", f"{allele}_trim.csv")
-
-# allele = "B0801"
-# PDB_preprocess(f"crystal/{allele}/ALIGN", "1i4f_Crown.pdb", f"crystal/{allele}/TRIM2", f"crystal/{allele}/ALIGN2", f"{allele}_trim2.csv")
