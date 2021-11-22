@@ -27,11 +27,11 @@ from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
 
-import pickle
-
 from pymol import cmd
 
 import pandas as pd
+
+from AtomicProperty import PartialCharge
 
 class ChainSelector:
     """
@@ -225,8 +225,10 @@ def PDB_to_csv(InDir, OutDir):
     """
     Assign parameters like partial charge to each atom, and store dataframe into csv file
     """
-    with open('ffcharge.pkl', 'rb') as inf:
-        ffcharge = pickle.load(inf)
+    # with open('ffcharge.pkl', 'rb') as inf:
+    #     ffcharge = pickle.load(inf)
+
+    ffcharge = PartialCharge
 
     with open('pep_surf.pkl', 'rb') as inf:
         pep = pickle.load(inf)
