@@ -14,12 +14,12 @@ import pandas as pd
 
 class Calculator():
 
-    def __init__(self, DATDir, OutCSV=None, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
+    def __init__(self, DATDir, OutCSV, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
         
-        # fixed parameters
-        self.l = 10 # charge param
-        self.sigma = 10 # shape param
-        self.d = 0.5 # depth param
+        # # fixed parameters
+        # self.l = 10 # charge param
+        # self.sigma = 10 # shape param
+        # self.d = 0.5 # depth param
         self.OutCSV = OutCSV
         self.DATDir = DATDir
 
@@ -50,13 +50,13 @@ class Calculator():
         # SimScore = np.sum(np.exp(np.reciprocal(np.outer(DepthA,DepthB))*self.d) * np.exp(-cdist(ChargeA, ChargeB, "euclidean")**2*self.l) * np.exp(-cdist(CoordA, CoordB, "euclidean")**2*0.5*self.sigma))
 
         # New kernel: spatial
-        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1))
+        # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1))
 
         # New kernel: spatial + electrostatic
         # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1))
 
         # New kernel: spatial + electrostatic + residue weight
-        # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
+        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
 
         # New kernel: spatial + electrostatic + depth to groove
         # SimScore = np.sum( np.reciprocal(np.cosh(5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * 1/(1 + np.exp(-(np.outer(DepthA,DepthB) - 3))) )

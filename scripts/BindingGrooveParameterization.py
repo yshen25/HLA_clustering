@@ -31,7 +31,7 @@ from pymol import cmd
 
 import pandas as pd
 
-from AtomicProperty import PartialCharge
+from PropertyParams import PartialCharge
 
 class ChainSelector:
     """
