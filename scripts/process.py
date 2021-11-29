@@ -27,7 +27,7 @@ from subprocess import Popen
 #         if file.endswith("_A.pdb"):
 #             os.rename(f"{InDir}/{file}", f"{InDir}/pdb_A/{file}")
 
-InDir = "B3501"
+InDir = "B4201"
 os.mkdir(f"{InDir}/pdb_A")
 
 for file in os.listdir(InDir):

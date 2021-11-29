@@ -386,6 +386,6 @@ AASim_matrix = [
     [0.37,0.58,0.93,0.6,0.62,0.61,0.9,0.41,0.95,0.87,0.83,0.09,0.6,0.53,0.34,0.56,0.26,0.41,1,0.69],
     [0.18,0.53,0.72,0.32,0.4,0.31,0.59,0.14,0.72,0.81,0.83,0,0.47,0.4,0.19,0.49,0.16,0.29,0.69,1],
     ]
-AA_order = ["Ser","Arg","Leu","Pro","Thr","Ala","Val","Gly","Ile","Phe","Tyr","Cys","His","Gln","Asn","Lys","Asp","Glu","Met","Trp"]
+AA_order = ["SER","ARG","LEU","PRO","THR","ALA","VAL","GLY","ILE","PHE","TYR","CYS","HIS","GLN","ASN","LYS","ASP","GLU","MET","TRP"]
 AASim = pd.DataFrame(AASim_matrix, columns=AA_order, index=AA_order)
 # 1-D/215, D is Grantham's distance

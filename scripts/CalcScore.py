@@ -29,7 +29,8 @@ class Calculator():
         self.depth_cut = depth_cut
         
         # Allele combinations
-        DATList = [a.split(".")[0] for a in sorted(os.listdir(DATDir))]
+
+        DATList = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(DATDir)) if InDAT.endswith(".csv")]
         self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
         self.AlleleComb_wo = combinations(DATList, 2)
         
@@ -193,23 +194,23 @@ class Calculator():
         
         return
 
-def main(DATDir, OutCSV):
-    ContactResi = [7,9,24,45,59,62,63,66,67,69,70,73,74,76,77,80,81,84,95,97,99,114,116,118,143,147,150,152,156,158,159,163,167,171]
-    # DATDir = "test"
-    # OutCSV = "test.csv"
-    calc = Calculator(DATDir, OutCSV, ContactResi=ContactResi)
-    # t1 = time.time()
-    # x = threading.Thread(target=calc.CalcDist(), args=(1,))
-    # x.start()
-    calc.CalcDist()
-    # pool = Pool(os.cpu_count())
-    # pool.map(calc.CalcDist(), 1)
-    # t2 = time.time()
-    # print(t2-t1, "seconds")
+# def main(DATDir, OutCSV):
+#     ContactResi = [7,9,24,45,59,62,63,66,67,69,70,73,74,76,77,80,81,84,95,97,99,114,116,118,143,147,150,152,156,158,159,163,167,171]
+#     # DATDir = "test"
+#     # OutCSV = "test.csv"
+#     calc = Calculator(DATDir, OutCSV, ContactResi=ContactResi)
+#     # t1 = time.time()
+#     # x = threading.Thread(target=calc.CalcDist(), args=(1,))
+#     # x.start()
+#     calc.CalcDist()
+#     # pool = Pool(os.cpu_count())
+#     # pool.map(calc.CalcDist(), 1)
+#     # t2 = time.time()
+#     # print(t2-t1, "seconds")
 
-    calc.SaveDist()
-    return
+#     calc.SaveDist()
+#     return
 
-if __name__ == '__main__':
-    main("HLAA_reference_panel/DAT", "HLAAref_distance_scd.csv")
-    main("HLAB_reference_panel/DAT", "HLABref_distance_scd.csv")
+# if __name__ == '__main__':
+#     main("HLAA_reference_panel/DAT", "HLAAref_distance_scd.csv")
+#     main("HLAB_reference_panel/DAT", "HLABref_distance_scd.csv")

@@ -144,6 +144,14 @@ class CGCalculator():
         else:
             WeightA = np.ones_like(resnumA)
             WeightB = np.ones_like(resnumB)
+
+        # convert numpy ndarray of objects to plain list
+        resiA = resiA.reshape(-1).tolist()
+        resiB = resiB.reshape(-1).tolist()
+
+        # convert back HIS variants
+        resiA = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resiA]
+        resiB = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resiB]
         
         return (comb, self.CloudSimilarity(CoordA, resiA, CoordB, resiB, WeightA, WeightB))
 

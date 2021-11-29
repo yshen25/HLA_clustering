@@ -27,11 +27,12 @@ from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
 
-from pymol import cmd
+# from pymol import cmd
 
 import pandas as pd
 
 from PropertyParams import PartialCharge
+from CGmodel import CenterOfMass
 
 class ChainSelector:
     """
@@ -82,7 +83,7 @@ class ChainSelector:
             return 1
 
 def extract(structure, chain_id, start, end, filename):
-    """Write out selected portion to filename."""
+    """Write out selected portion of structure to <filename (pdb)>."""
     sel = ChainSelector(chain_id, start, end)
     io = PDBIO()
     io.set_structure(structure)
@@ -105,28 +106,36 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
     aligner.gap_score = -10 # no gap wanted
 
     for InPDB in os.listdir(InDir):
-        print("trim:", InPDB)
-        InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
-        InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
-        
-        starting_loc = InStruct[0]["A"].child_list[0]._id[1]
-        alignments = aligner.align(InSeq, TSeq)
+        if InPDB.endswith(".pdb"):
+            print("trim:", InPDB)
+            InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
+            InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
+            
+            starting_loc = InStruct[0]["A"].child_list[0]._id[1]
+            alignments = aligner.align(InSeq, TSeq)
 
-        qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
-        #qend = alignments[0].aligned[0][-1][-1]
-        qend = qstart + 178
-        # use 177 to remove last amino acid of relaxed models
+            qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
+            #qend = alignments[0].aligned[0][-1][-1]
+            qend = qstart + 178
+            # use 177 to remove last amino acid of relaxed models
 
-        # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
-        OutPDB = InPDB
-        
-        extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
-        #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
-        record.append([OutPDB, qstart, qend, qend-qstart+1])
+            # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
+            OutPDB = InPDB
+            
+            extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
+            #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
+            record.append([OutPDB, qstart, qend, qend-qstart+1])
 
     df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
     df.to_csv(OutCSV)
 
+    return
+
+def PDB_renumber():
+    """
+    For mono-chain pdb file only
+    renumber pdb files
+    """
     return
 
 def alphaNbeta(InPDB):
@@ -158,16 +167,17 @@ def PDB_align(InDir, refPDB, OutDir):
     _, RAchRange = alphaNbeta(refPDB)
 
     for InPDB in os.listdir(InDir):
-        print("align:", InPDB)
-        _, TAchRange = alphaNbeta(f"{InDir}/{InPDB}")
+        if InPDB.endswith(".pdb"):
+            print("align:", InPDB)
+            _, TAchRange = alphaNbeta(f"{InDir}/{InPDB}")
 
-        cmd.load(f"{InDir}/{InPDB}", "target")
-        cmd.align(f"target///{TAchRange}/CA", f"template///{RAchRange}/CA") # align and superimpose based on alpha helix wall and beta sheet plate
+            cmd.load(f"{InDir}/{InPDB}", "target")
+            cmd.align(f"target///{TAchRange}/CA", f"template///{RAchRange}/CA") # align and superimpose based on alpha helix wall and beta sheet plate
 
-        OutPDB = f"{OutDir}/{InPDB.split('.')[0]}.pdb"
-        cmd.save(OutPDB, "target")
-        print(f"Align file saved: {OutPDB}")
-        cmd.delete("target")
+            OutPDB = f"{OutDir}/{InPDB.split('.')[0]}.pdb"
+            cmd.save(OutPDB, "target")
+            print(f"Align file saved: {OutPDB}")
+            cmd.delete("target")
     
     return
 
@@ -230,66 +240,67 @@ def PDB_to_csv(InDir, OutDir):
 
     ffcharge = PartialCharge
 
-    with open('pep_surf.pkl', 'rb') as inf:
-        pep = pickle.load(inf)
+    # with open('pep_surf.pkl', 'rb') as inf:
+    #     pep = pickle.load(inf)
 
     if not os.path.exists(OutDir):
         os.makedirs(OutDir)
 
     for InPDB in os.listdir(InDir):
-        print(InPDB)
-        OutList = []
-        '''
-        OutPKL = InPDB.split(".")[0] + ".pdb"
-        Struct_df.to_pickle(OutPKL)
-        print(f"Pickle file saved: {OutDir}/{OutPKL}")
-        '''
-        parser = PDBParser(PERMISSIVE=1)
+        if InPDB.endswith(".pdb"):
+            print(InPDB)
+            OutList = []
+            '''
+            OutPKL = InPDB.split(".")[0] + ".pdb"
+            Struct_df.to_pickle(OutPKL)
+            print(f"Pickle file saved: {OutDir}/{OutPKL}")
+            '''
+            parser = PDBParser(PERMISSIVE=1)
 
-        TStruct = parser.get_structure("struct", f"{InDir}/{InPDB}")[0]
-        # i = 0 # used to record aa position
-        # pep_len = len(TStruct['A'])
-        for residue in TStruct['A']:
-            # i += 1
-            # if i >= pep_len: # if the last one
-            #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
-            ResName = residue.resname
-            ResNum = residue.id[1]
-            
-            if ResName == "HIS": # distinguish three protonation states of histidine
+            TStruct = parser.get_structure("struct", f"{InDir}/{InPDB}")[0]
+            # i = 0 # used to record aa position
+            # pep_len = len(TStruct['A'])
+            for residue in TStruct['A']:
+                # i += 1
+                # if i >= pep_len: # if the last one
+                #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
+                ResName = residue.resname
+                ResNum = residue.id[1]
                 
-                if residue.has_id("HE2"):
+                if ResName == "HIS": # distinguish three protonation states of histidine
                     
-                    if residue.has_id("HD1"):
-                        ResName = "HIP" # H on both epsilon and delta N
+                    if residue.has_id("HE2"):
+                        
+                        if residue.has_id("HD1"):
+                            ResName = "HIP" # H on both epsilon and delta N
+                        else:
+                            ResName = "HIE" # H on epsilon N only
+
                     else:
-                        ResName = "HIE" # H on epsilon N only
+                        ResName = "HID" # H on delta N only. By default HIS is HID
+                
+                for atom in residue:
+                    #print(atom.__dict__)
+                    X_coord, Y_coord, Z_coord = atom.coord[0:3]
+                    OutList.append([ResName, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
+                    , ffcharge[ResName][atom.name.lstrip(digits)]])
 
-                else:
-                    ResName = "HID" # H on delta N only. By default HIS is HID
-            
-            for atom in residue:
-                #print(atom.__dict__)
-                X_coord, Y_coord, Z_coord = atom.coord[0:3]
-                OutList.append([ResName, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
-                , ffcharge[ResName][atom.name.lstrip(digits)]])
+            OutList = np.array(OutList)
+            # ResiDepth = resi_depth(TStruct, OutList[:,4:7], pep)
+            # InGroove = in_groove(f"{InDir}/{InPDB}", TStruct, OutList[:,4:7], pep)
+            ResiDepth = InGroove = np.zeros((OutList.shape[0],1))
 
-        OutList = np.array(OutList)
-        # ResiDepth = resi_depth(TStruct, OutList[:,4:7], pep)
-        # InGroove = in_groove(f"{InDir}/{InPDB}", TStruct, OutList[:,4:7], pep)
-        ResiDepth = InGroove = np.zeros((OutList.shape[0],1))
+            # print(OutList[:,4:7].shape)
+            # print(ResiDepth.shape)
 
-        # print(OutList[:,4:7].shape)
-        # print(ResiDepth.shape)
+            # OutList = np.hstack((OutList, InGroove))
+            # OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "InGroove"])
 
-        # OutList = np.hstack((OutList, InGroove))
-        # OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "InGroove"])
+            OutList = np.hstack((OutList, ResiDepth, InGroove))
+            OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Depth", "InGroove"])
 
-        OutList = np.hstack((OutList, ResiDepth, InGroove))
-        OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Depth", "InGroove"])
-
-        OutDF.to_csv(f"{OutDir}/{InPDB.split('.')[0] + '.csv'}", index=False)
-        # sys.exit()
+            OutDF.to_csv(f"{OutDir}/{InPDB.split('.')[0] + '.csv'}", index=False)
+            # sys.exit()
 
     return
 
@@ -305,9 +316,10 @@ def CP_template(DATDir, RefDir):
     ,"B78_01"]
 
     for InDAT in os.listdir(DATDir):
-        if InDAT.split(".")[0] in RefList:
-            shutil.copy2(f"{DATDir}/{InDAT}", RefDir)
-            print(f"Copy reference allele: {DATDir}/{InDAT}")
+        if InDAT.endswith(".csv"):
+            if InDAT.split(".")[0] in RefList:
+                shutil.copy2(f"{DATDir}/{InDAT}", RefDir)
+                print(f"Copy reference allele: {DATDir}/{InDAT}")
 
     return
 
@@ -325,10 +337,11 @@ def CreateRecord(DATDir, RecFile):
 
     record = []
     for InDAT in sorted(os.listdir(DATDir)):
-        if InDAT.split(".")[0] in RefList:
-            record.append([InDAT.split(".")[0], 1])
-        else:
-            record.append([InDAT.split(".")[0], 0])
+        if InDAT.endswith(".csv"):
+            if InDAT.split(".")[0] in RefList:
+                record.append([InDAT.split(".")[0], 1])
+            else:
+                record.append([InDAT.split(".")[0], 0])
     df = pd.DataFrame(record, columns=["Allele", "reference"])
     df.to_csv(RecFile, index=False)
 
@@ -347,16 +360,28 @@ def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV):
 
     return
 
+def FullAtom_to_CG(DATDir, OutDir):
+    """
+    Input: full atom DAT directory
+    Output: coarse-grained DAT file
+    """
+    for InDAT in os.listdir(DATDir):
+        if InDAT.endswith(".csv"):
+            CenterOfMass(f"{DATDir}/{InDAT}", f"{OutDir}/{InDAT.split('.')[0]}_CG.csv")
+
+    return
+
 
 if __name__ == "__main__":
 
+    ## ====== Homology models ======
     # PDB_preprocess("HLAA_relax/PDB", "1i4f_Crown.pdb", "HLAA_relax/TRIM", "HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
     # PDB_preprocess("HLAB_relax/PDB", "1i4f_Crown.pdb", "HLAB_relax/TRIM", "HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
 
     # PDB_to_csv("HLAA_relax/ALIGN", "HLAA_relax/DAT")
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
-    # PDB_to_csv("crystal/A_mean/pdb", "crystal/A_mean/DAT")
-    # PDB_to_csv("crystal/B_mean/pdb", "crystal/B_mean/DAT")
+    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
+    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
 
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
     # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
@@ -366,8 +391,12 @@ if __name__ == "__main__":
     # CP_template("../HLAB_DAT", "../HLAB_reference_panel/DAT")
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
-    for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
+
+    ## ====== Crystal structures ======
+    # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
-        PDB_preprocess(f"crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+        # PDB_preprocess(f"crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+    FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG")
+    FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG")
     
     pass
