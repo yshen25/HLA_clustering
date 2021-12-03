@@ -32,11 +32,12 @@ def CenterOfMass(DATFile, OutFile):
         x = y = z = 0
         total_mass = 0
         resnum = resi[0]
-        resatoms = resi[1]
+        resatoms_df = resi[1]
         # print(resatoms)
-        resname = resatoms["Residue"].iloc[0]
+        resname = resatoms_df["Residue"].iloc[0]
 
-        for atom in resatoms[["Atom", "X", "Y", "Z"]].to_numpy():
+        for atom in resatoms_df[["Atom", "X", "Y", "Z"]].to_numpy():
+            print(atom)
             mass = AtomicMass[atom[0][0]] # real atom name is the first letter of pdb atom name
             total_mass += mass
             x += mass * atom[1]
@@ -50,8 +51,6 @@ def CenterOfMass(DATFile, OutFile):
     CG_DAT.to_csv(OutFile, index=False)
 
     return
-
-# CenterOfMass("crystal/A_mean/DAT/A01_01.csv")
 
 class CGCalculator():
     """

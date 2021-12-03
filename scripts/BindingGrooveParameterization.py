@@ -8,7 +8,8 @@ output: csv file
 """
 
 import os
-import pickle
+import re
+# import pickle
 import shutil
 from string import digits
 from itertools import chain, groupby
@@ -77,10 +78,18 @@ class ChainSelector:
 
     def accept_atom(self, atom):
         """Modified to accept all atoms including hydrogens"""
-        if atom.altloc not in [" ", "A"]:
+        
+        # _hydrogen = re.compile("[123 ]*H.*")
+
+        # if _hydrogen.match(atom.get_id()): # remove hydrogens
+        #     return 0
+        if "H" in atom.get_id(): # new way to remove hydrogens
             return 0
-        else:
-            return 1
+
+        if atom.altloc not in [" ", "A"]: # remove altloc atoms
+            return 0
+
+        return 1
 
 def extract(structure, chain_id, start, end, filename):
     """Write out selected portion of structure to <filename (pdb)>."""
@@ -106,27 +115,6 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
     aligner.gap_score = -10 # no gap wanted
 
     for InPDB in os.listdir(InDir):
-<<<<<<< Updated upstream
-        if InPDB.endswith(".pdb"):
-            print("trim:", InPDB)
-            InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
-            InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
-            
-            starting_loc = InStruct[0]["A"].child_list[0]._id[1]
-            alignments = aligner.align(InSeq, TSeq)
-
-            qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
-            #qend = alignments[0].aligned[0][-1][-1]
-            qend = qstart + 178
-            # use 177 to remove last amino acid of relaxed models
-
-            # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
-            OutPDB = InPDB
-            
-            extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
-            #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
-            record.append([OutPDB, qstart, qend, qend-qstart+1])
-=======
         print("trim:", InPDB)
         InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
         InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
@@ -145,7 +133,6 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
         extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
         #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
         record.append([OutPDB, qstart, qend, qend-qstart+1])
->>>>>>> Stashed changes
 
     df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
     df.to_csv(OutCSV)
@@ -337,12 +324,6 @@ def CP_template(DATDir, RefDATDir, ALNDir, RefALNDir):
     ,"B78_01"]
 
     for InDAT in os.listdir(DATDir):
-<<<<<<< Updated upstream
-        if InDAT.endswith(".csv"):
-            if InDAT.split(".")[0] in RefList:
-                shutil.copy2(f"{DATDir}/{InDAT}", RefDir)
-                print(f"Copy reference allele: {DATDir}/{InDAT}")
-=======
         if InDAT.split(".")[0] in RefList:
             shutil.copy2(f"{DATDir}/{InDAT}", RefDATDir)
             print(f"Copy reference allele DAT file: {DATDir}/{InDAT}")
@@ -351,7 +332,6 @@ def CP_template(DATDir, RefDATDir, ALNDir, RefALNDir):
         if InALN.split(".")[0] in RefList:
             shutil.copy2(f"{ALNDir}/{InALN}", RefALNDir)
             print(f"Copy reference allele aligned pdb file: {ALNDir}/{InALN}")
->>>>>>> Stashed changes
 
     return
 
@@ -397,6 +377,9 @@ def FullAtom_to_CG(DATDir, OutDir):
     Input: full atom DAT directory
     Output: coarse-grained DAT file
     """
+    if not os.path.exists(OutDir):
+        os.makedirs(OutDir)
+
     for InDAT in os.listdir(DATDir):
         if InDAT.endswith(".csv"):
             CenterOfMass(f"{DATDir}/{InDAT}", f"{OutDir}/{InDAT.split('.')[0]}_CG.csv")
@@ -406,21 +389,12 @@ def FullAtom_to_CG(DATDir, OutDir):
 
 if __name__ == "__main__":
 
-<<<<<<< Updated upstream
-    ## ====== Homology models ======
-=======
     ## ====relaxed====
->>>>>>> Stashed changes
     # PDB_preprocess("HLAA_relax/PDB", "1i4f_Crown.pdb", "HLAA_relax/TRIM", "HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
     # PDB_preprocess("HLAB_relax/PDB", "1i4f_Crown.pdb", "HLAB_relax/TRIM", "HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
 
     # PDB_to_csv("HLAA_relax/ALIGN", "HLAA_relax/DAT")
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
-<<<<<<< Updated upstream
-    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
-    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
-
-=======
 
     ## ====crystal====
     # PDB_to_csv("crystal/A_mean/pdb", "crystal/A_mean/DAT")
@@ -429,11 +403,10 @@ if __name__ == "__main__":
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
         # PDB_preprocess(f"../crystal/{allele}/ALIGN", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM2", f"../crystal/{allele}/ALIGN2", f"../{allele}_trim.csv")
-    PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
-    PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
+    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
+    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
     
     ## ====homology models====
->>>>>>> Stashed changes
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
     # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
     # PDB_to_csv("../HLAA_Aligned", "../HLAA_DAT")
@@ -442,15 +415,8 @@ if __name__ == "__main__":
     # CP_template("../HLAB_DAT", "../HLAB_reference_panel/DAT", "../HLAB_Aligned", "../HLAB_reference_panel/ALIGN")
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
-<<<<<<< Updated upstream
 
-    ## ====== Crystal structures ======
-    # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
-    # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
-        # PDB_preprocess(f"crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
-    FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG")
-    FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG")
-=======
->>>>>>> Stashed changes
-    
+    FullAtom_to_CG("../HLAA_DAT", "../HLAA_CG_DAT")
+    FullAtom_to_CG("../HLAB_DAT", "../HLAB_CG_DAT")
+
     pass
