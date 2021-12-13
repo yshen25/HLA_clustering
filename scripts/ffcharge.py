@@ -30,7 +30,7 @@ TRP
 TYR
 VAL
 '''
-import pickle
+# import pickle
 
 ffcharge={
 "ALA":
@@ -620,5 +620,5 @@ ffcharge={
 "OXT": -0.793000}
 '''
 
-with open("ffcharge.pkl", "wb") as ouf:
-    pickle.dump(ffcharge, ouf)
+# with open("ffcharge.pkl", "wb") as ouf:
+#     pickle.dump(ffcharge, ouf)

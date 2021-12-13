@@ -83,8 +83,8 @@ class ChainSelector:
 
         # if _hydrogen.match(atom.get_id()): # remove hydrogens
         #     return 0
-        if "H" in atom.get_id(): # new way to remove hydrogens
-            return 0
+        # if "H" in atom.get_id(): # new way to remove hydrogens
+        #     return 0
 
         if atom.altloc not in [" ", "A"]: # remove altloc atoms
             return 0
@@ -134,8 +134,8 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
         #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
         record.append([OutPDB, qstart, qend, qend-qstart+1])
 
-    df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
-    df.to_csv(OutCSV)
+    # df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
+    # df.to_csv(OutCSV)
 
     return
 
@@ -151,7 +151,14 @@ def alphaNbeta(InPDB):
     Extract alpha helix and beta sheets aa index of input PDB (1-based)
     Return string of index range
     """
-    dssp = dssp_dict_from_pdb_file(InPDB, DSSP="/home/shawn/local/dssp/mkdssp")
+    if os.path.exists("/home/shawn/local/dssp/mkdssp"):
+        DSSP_path = "/home/shawn/local/dssp/mkdssp"
+    elif os.path.exists("/Users/ys0/local/dssp/mkdssp"):
+        DSSP_path = "/Users/ys0/local/dssp/mkdssp"
+    else:
+        raise ValueError("DSSP not found!")
+    
+    dssp = dssp_dict_from_pdb_file(InPDB, DSSP=DSSP_path)
     secondary_structure = [dssp[0][i][1] for i in dssp[0].keys()]
     aa_index = [dssp[0][i][5] for i in dssp[0].keys()] # 1-based
 
@@ -180,11 +187,12 @@ def PDB_align(InDir, refPDB, OutDir):
             _, TAchRange = alphaNbeta(f"{InDir}/{InPDB}")
 
             cmd.load(f"{InDir}/{InPDB}", "target")
+            cmd.h_add() # add hydrogen atoms, specifically for crystal structures
             cmd.align(f"target///{TAchRange}/CA", f"template///{RAchRange}/CA") # align and superimpose based on alpha helix wall and beta sheet plate
 
             OutPDB = f"{OutDir}/{InPDB.split('.')[0]}.pdb"
             cmd.save(OutPDB, "target")
-            print(f"Align file saved: {OutPDB}")
+            # print(f"Align file saved: {OutPDB}")
             cmd.delete("target")
     
     return
@@ -386,7 +394,6 @@ def FullAtom_to_CG(DATDir, OutDir):
 
     return
 
-
 if __name__ == "__main__":
 
     ## ====relaxed====
@@ -397,9 +404,11 @@ if __name__ == "__main__":
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
 
     ## ====crystal====
-    # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
+    for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
-        # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+    # for allele in ["A0101"]:
+        PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+        # add_H(f"crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/{allele}/ALIGN", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM2", f"../crystal/{allele}/ALIGN2", f"../{allele}_trim.csv")
     # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
     # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")

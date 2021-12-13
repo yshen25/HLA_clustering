@@ -7,7 +7,6 @@ Residues are represented by side-chain center-of-mass
 import os
 import sys
 import time
-from typing_extensions import ParamSpec
 from scipy.spatial.distance import cdist
 from itertools import combinations, combinations_with_replacement
 from multiprocessing import Pool
