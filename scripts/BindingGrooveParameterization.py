@@ -28,7 +28,7 @@ from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
 
-# from pymol import cmd
+from pymol import cmd
 
 import pandas as pd
 
@@ -397,8 +397,6 @@ if __name__ == "__main__":
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
 
     ## ====crystal====
-    # PDB_to_csv("crystal/A_mean/pdb", "crystal/A_mean/DAT")
-    # PDB_to_csv("crystal/B_mean/pdb", "crystal/B_mean/DAT")
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0205", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"crystal/{allele}/ALIGN", f"{allele}_trim.csv")
@@ -416,7 +414,7 @@ if __name__ == "__main__":
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
 
-    FullAtom_to_CG("../HLAA_DAT", "../HLAA_CG_DAT")
-    FullAtom_to_CG("../HLAB_DAT", "../HLAB_CG_DAT")
+    # FullAtom_to_CG("../HLAA_DAT", "../HLAA_CG_DAT")
+    # FullAtom_to_CG("../HLAB_DAT", "../HLAB_CG_DAT")
 
     pass

@@ -5,7 +5,9 @@ From full-atom DAT file to coarse-grained DAT file
 Residues are represented by side-chain center-of-mass
 """
 import os
+import sys
 import time
+from typing_extensions import ParamSpec
 from scipy.spatial.distance import cdist
 from itertools import combinations, combinations_with_replacement
 from multiprocessing import Pool
@@ -56,7 +58,15 @@ class CGCalculator():
     """
     Calculate distance between CG models
     """
-    def __init__(self, DATDir, OutCSV, ContactResi:list=None, ResiWeight:dict=None) -> None:
+    def __init__(self, DATDir, OutCSV, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
+        
+        # first, check if pairwise mode seeting is correct
+        # number of residues between two molecules must be the same
+        if Pairwise:
+            if not ContactResi:
+                raise ValueError("Must specify contact residues to enable pairwise mode!!")
+        self.pairwise = Pairwise # controls pairwise matrices or all-to-all matrices
+        
         self.OutCSV = OutCSV
         self.DATDir = DATDir
         self.AASimDict = AASim
@@ -74,17 +84,35 @@ class CGCalculator():
         self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
 
     def ResiPairSim(self, ResiA, ResiB):
-        ResiPairComb = [(x, y) for x in ResiA for y in ResiB]
+        """
+        Residue similarity
+        """
+        if self.pairwise:
+            ResiPairComb = list(zip(ResiA, ResiB))
+        else:
+            ResiPairComb = [(x, y) for x in ResiA for y in ResiB]
+        
         ResiPairSim = np.array([AASim[i][j] for i,j in ResiPairComb])
 
-        return ResiPairSim.reshape((len(ResiA), len(ResiB)))
+        # print(ResiPairComb.shape)
+        if self.pairwise:
+            
+            return ResiPairSim
+
+        else:
+
+            return ResiPairSim.reshape((len(ResiA), len(ResiB)))
 
 
     def CloudSimilarity(self, CoordA, ResiA, CoordB, ResiB, WeightA, WeightB):
         
         ResiPairSim_score = self.ResiPairSim(ResiA, ResiB)
 
-        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))) * ResiPairSim_score * np.outer(WeightA, WeightB) )
+        if self.pairwise:
+            SimScore = np.sum(np.linalg.norm(CoordA - CoordB, ord=2, axis=1) * ResiPairSim_score * np.multiply(WeightA, WeightB))
+
+        else:
+            SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))) * ResiPairSim_score * np.outer(WeightA, WeightB) )
 
         return SimScore
 
@@ -152,6 +180,10 @@ class CGCalculator():
         resiA = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resiA]
         resiB = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resiB]
         
+        # print(len(CoordA), len(CoordB))
+        if len(resnumA) != len(resnumB):
+            print(f"{comb[0]} != {comb[1]}")
+        sys.exit()
         return (comb, self.CloudSimilarity(CoordA, resiA, CoordB, resiB, WeightA, WeightB))
 
     def CalcDist(self):
