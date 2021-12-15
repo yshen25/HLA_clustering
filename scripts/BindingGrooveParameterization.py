@@ -127,8 +127,8 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
         qend = qstart + 178
         # use 177 to remove last amino acid of relaxed models
 
-        OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
-        # OutPDB = InPDB
+        # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
+        OutPDB = InPDB
         
         extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
         #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
@@ -187,7 +187,10 @@ def PDB_align(InDir, refPDB, OutDir):
             _, TAchRange = alphaNbeta(f"{InDir}/{InPDB}")
 
             cmd.load(f"{InDir}/{InPDB}", "target")
-            cmd.h_add() # add hydrogen atoms, specifically for crystal structures
+            cmd.h_add(selection="(resn 'GLY' and name 'CA')") # add hydrogen atoms for Glycine, especifically for CG methods of crystal structures
+            cmd.alter("(resn 'GLY' and name 'H01')", "name='1HA'")
+            cmd.alter("(resn 'GLY' and name 'H02')", "name='2HA'")
+            cmd.alter("(resn 'GLY' and name 'H03')", "name='2HA'")
             cmd.align(f"target///{TAchRange}/CA", f"template///{RAchRange}/CA") # align and superimpose based on alpha helix wall and beta sheet plate
 
             OutPDB = f"{OutDir}/{InPDB.split('.')[0]}.pdb"
@@ -404,14 +407,16 @@ if __name__ == "__main__":
     # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
 
     ## ====crystal====
-    for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
+    # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
     # for allele in ["A0101"]:
-        PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
-        # add_H(f"crystal/{allele}/ALIGN")
-        # PDB_preprocess(f"../crystal/{allele}/ALIGN", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM2", f"../crystal/{allele}/ALIGN2", f"../{allele}_trim.csv")
+        # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+
     # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
     # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
+
+    FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG_DAT")
+    FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG_DAT")
     
     ## ====homology models====
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")

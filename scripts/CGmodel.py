@@ -38,8 +38,13 @@ def CenterOfMass(DATFile, OutFile):
         resname = resatoms_df["Residue"].iloc[0]
 
         for atom in resatoms_df[["Atom", "X", "Y", "Z"]].to_numpy():
-            print(atom)
-            mass = AtomicMass[atom[0][0]] # real atom name is the first letter of pdb atom name
+            # print(atom)
+            if not atom[0][0].isdigit():
+                mass = AtomicMass[atom[0][0]] # real atom name is the first letter of pdb atom name
+
+            else:
+                mass = AtomicMass[atom[0][1]]
+
             total_mass += mass
             x += mass * atom[1]
             y += mass * atom[2]
@@ -90,7 +95,7 @@ class CGCalculator():
             ResiPairComb = list(zip(ResiA, ResiB))
         else:
             ResiPairComb = [(x, y) for x in ResiA for y in ResiB]
-        
+        # print(ResiPairComb)
         ResiPairSim = np.array([AASim[i][j] for i,j in ResiPairComb])
 
         # print(ResiPairComb.shape)
@@ -180,9 +185,9 @@ class CGCalculator():
         resiB = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resiB]
         
         # print(len(CoordA), len(CoordB))
-        if len(resnumA) != len(resnumB):
-            print(f"{comb[0]} != {comb[1]}")
-        sys.exit()
+        # if len(resnumA) != len(resnumB):
+        #     print(f"{comb[0]} != {comb[1]}")
+        # sys.exit()
         return (comb, self.CloudSimilarity(CoordA, resiA, CoordB, resiB, WeightA, WeightB))
 
     def CalcDist(self):
@@ -205,11 +210,15 @@ class CGCalculator():
             SimilarityMat[i[0]] = i[1]
         
         # Distance between two alleles, derived from similarity score
-
-        for comb in self.AlleleComb_wo:
-            # print(f"Dist: {comb}")
-            distance = np.sqrt(SimilarityMat[(comb[0], comb[0])] + SimilarityMat[(comb[1], comb[1])] - 2 * SimilarityMat[comb])
-            self.DistMat.loc[comb[1],comb[0]] = distance
+        if self.pairwise:
+            for comb in self.AlleleComb_wo:
+                distance = SimilarityMat[comb]
+                self.DistMat.loc[comb[1],comb[0]] = distance
+        else:
+            for comb in self.AlleleComb_wo:
+                # print(f"Dist: {comb}")
+                distance = np.sqrt(SimilarityMat[(comb[0], comb[0])] + SimilarityMat[(comb[1], comb[1])] - 2 * SimilarityMat[comb])
+                self.DistMat.loc[comb[1],comb[0]] = distance
 
         return
 
