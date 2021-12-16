@@ -98,6 +98,25 @@ def extract(structure, chain_id, start, end, filename):
     io.set_structure(structure)
     io.save(filename, sel)
 
+    return
+
+def PDB_renumber(struct, start:int):
+    """
+    For mono-chain pdb file only
+    renumber pdb files
+    """
+    #loop 1: renumber residues to negative number to avoid errors
+    residue_id = -1
+    for residue in struct.get_residues():
+        residue.id=(' ',residue_id,' ')
+        residue_id -= 1
+    #loop 2
+    residue_id = start
+    for residue in struct.get_residues():
+        #print(chain.get_id(), residue_id)
+        residue.id=(' ',residue_id,' ')
+        residue_id += 1
+    return struct
 
 def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
     """
@@ -119,31 +138,30 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
         InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
         InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
         
-        starting_loc = InStruct[0]["A"].child_list[0]._id[1]
+        starting_loc = InStruct[0]["A"].child_list[0]._id[1] # index of the first residue
         alignments = aligner.align(InSeq, TSeq)
 
-        qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
-        #qend = alignments[0].aligned[0][-1][-1]
-        qend = qstart + 178
+        ## === archive === stand-alone trim
+        # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
+        # qend = qstart + 178 # fixed length
+        #qend = alignments[0].aligned[0][-1][-1] # aligned portion
         # use 177 to remove last amino acid of relaxed models
+        
+        ## === use with PDB_renumber ===
+        qstart = starting_loc - alignments[0].aligned[0][0][0] + 1 # starting loc should be 2
+        qend = 179
 
         # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
         OutPDB = InPDB
-        
-        extract(InStruct, chain, qstart, qend, f"{OutDir}/{OutPDB}")
+
+        InStruct = PDB_renumber(InStruct, qstart)
+        extract(InStruct, chain, 2, qend, f"{OutDir}/{OutPDB}")
         #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
         record.append([OutPDB, qstart, qend, qend-qstart+1])
 
     # df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
     # df.to_csv(OutCSV)
 
-    return
-
-def PDB_renumber():
-    """
-    For mono-chain pdb file only
-    renumber pdb files
-    """
     return
 
 def alphaNbeta(InPDB):
@@ -409,7 +427,7 @@ if __name__ == "__main__":
     ## ====crystal====
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
-    # for allele in ["A0101"]:
+    # for allele in ["A0201"]:
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
 
     # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
