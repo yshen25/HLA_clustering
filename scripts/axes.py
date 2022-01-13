@@ -1,5 +1,5 @@
 # axes.py
-from pymol.cgo import *
+from pymol.cgo import cyl_text, CYLINDER
 from pymol import cmd
 from pymol.vfont import plain
 
@@ -7,9 +7,9 @@ from pymol.vfont import plain
 #blue for X, Y and Z
 
 obj = [
-   CYLINDER, 0., 0., 0., 10., 0., 0., 0.2, 1.0, 1.0, 1.0, 1.0, 0.0, 0.,
-   CYLINDER, 0., 0., 0., 0., 10., 0., 0.2, 1.0, 1.0, 1.0, 0., 1.0, 0.,
-   CYLINDER, 0., 0., 0., 0., 0., 10., 0.2, 1.0, 1.0, 1.0, 0., 0.0, 1.0,
+   CYLINDER, 0., 0., 0., 10., 0., 0., 0.2, 1.0, 0., 0., 1.0, 0.0, 0.,
+   CYLINDER, 0., 0., 0., 0., 10., 0., 0.2, 0., 1.0, 0., 0., 1.0, 0.,
+   CYLINDER, 0., 0., 0., 0., 0., 10., 0.2, 0., 0., 1.0, 0., 0.0, 1.0,
    ]
 
 # add labels to axes object (requires pymol version 0.8 or greater, I

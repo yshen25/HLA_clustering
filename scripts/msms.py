@@ -7,6 +7,8 @@ module for using and parsing msms
 from subprocess import Popen, PIPE, DEVNULL
 import tempfile
 import numpy as np
+import sys
+import os
 
 from scipy.spatial.distance import cdist
 
@@ -20,7 +22,8 @@ class SolventAccessible():
         if  MSMS_Dir:
             self.MSMS_Dir = MSMS_Dir
         else:
-            self.MSMS_Dir = "/Users/ys0/local/msms_x86_64Darwin_2.6.1"
+            self.MSMS_Dir = "/home/shawn/local/msms_i86_64Linux2_2.6.1"
+            # self.MSMS_Dir = "/Users/ys0/local/msms_x86_64Darwin_2.6.1"
         
         if pdb_to_xyzr:
             self.pdb_to_xyzr = pdb_to_xyzr
@@ -30,7 +33,8 @@ class SolventAccessible():
         if MSMS:
             self.MSMS = MSMS
         else:
-            self.MSMS = "msms.x86_64Darwin.2.6.1"
+            self.MSMS = "msms.x86_64Linux2.2.6.1"
+            # self.MSMS = "msms.x86_64Darwin.2.6.1"
 
     def run_msms(self, InPDB):
         """
@@ -39,7 +43,8 @@ class SolventAccessible():
         """
         pdb_to_xyzr_run = Popen([f"{self.MSMS_Dir}/{self.pdb_to_xyzr}", InPDB], stdout=PIPE, stderr=PIPE)
         xyzr_out, error = pdb_to_xyzr_run.communicate()
-
+        # print(xyzr_out.decode())
+        # sys.exit()
         if error:
             raise ValueError(error)
         
@@ -48,12 +53,17 @@ class SolventAccessible():
         with open(xyzr_temp.name, "w") as fh:
             fh.write(xyzr_out.decode())
 
-        OutFile = tempfile.NamedTemporaryFile()
+        # OutFile = tempfile.NamedTemporaryFile().name
+        fh, OutFile = tempfile.mkstemp(suffix=".vert")
 
-        msms_run = Popen([f"{self.MSMS_Dir}/{self.MSMS}", "-if", xyzr_temp.name, "-of", OutFile.name], stdout=DEVNULL)
+        msms_run = Popen([f"{self.MSMS_Dir}/{self.MSMS}", "-if", xyzr_temp.name, "-of", OutFile.split(".")[0]], stdout=DEVNULL)
         msms_run.communicate()
-        
-        return self.parse_msms(OutFile.name)
+        vertex_list, norm_list = self.parse_msms(OutFile)
+
+        os.close(fh)
+        os.remove(OutFile)
+
+        return vertex_list, norm_list
 
     def parse_msms(self, msmsFile):
         """
@@ -81,7 +91,7 @@ class SolventAccessible():
     def InorOut(self, GridList:np.ndarray, TargetPDB:str) -> np.ndarray:
         """
         input: numpy array of 3D points
-        output: numpy array of points inside
+        output: numpy boolean array of points inside (1) or outside (0)
         algorithm: calculate dot product of vector from nearest surface point to 
             query point and normal of nearest surface point, if > 0 is outside
         """
@@ -91,8 +101,8 @@ class SolventAccessible():
         nearest_point = vertexL[nearest_point_index]
         nearest_normal = normL[nearest_point_index]
 
-        projection = np.dot(GridList - nearest_point, nearest_normal)
+        projection = np.einsum("ij,ij->i", GridList - nearest_point, nearest_normal)
 
         outside_bool = projection > 0
 
-        return GridList[outside_bool]
+        return outside_bool

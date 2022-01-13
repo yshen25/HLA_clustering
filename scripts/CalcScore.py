@@ -37,7 +37,7 @@ class Calculator():
         # Distance matrix for output, in lower triangular form
         self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
 
-    def CloudSimilarity(self, CoordA, ChargeA, CoordB, ChargeB, DepthA, DepthB, WeightA, WeightB):
+    def CloudSimilarity(self, CoordA, ChargeA, HydroA, CoordB, ChargeB, HydroB, WeightA, WeightB):
         """
         adjusted sum of all pair of atoms between two atom clouds
         """
@@ -57,7 +57,10 @@ class Calculator():
         # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1))
 
         # New kernel: spatial + electrostatic + residue weight
-        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * np.outer(WeightA, WeightB) )
+        # SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))) * np.outer(WeightA, WeightB) )
+
+        # New kernel: spatial + electrostatic + hydrophobicity + residue weight
+        SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))) * np.reciprocal(np.cosh(5*cdist(HydroA, HydroB, "euclidean"))) * np.outer(WeightA, WeightB) )
 
         # New kernel: spatial + electrostatic + depth to groove
         # SimScore = np.sum( np.reciprocal(np.cosh(5*cdist(CoordA, CoordB, "euclidean"))**1) * np.reciprocal(np.cosh(5*cdist(ChargeA, ChargeB, "euclidean"))**1) * 1/(1 + np.exp(-(np.outer(DepthA,DepthB) - 3))) )
@@ -69,10 +72,11 @@ class Calculator():
         resnum = DAT['ResNum'].values.reshape((-1,1))
         coord = DAT[['X', 'Y', 'Z']].values
         charge = DAT['Charge'].values.reshape((-1,1))
-        depth = DAT['Depth'].values.reshape((-1,1))
-        in_groove = DAT['InGroove'].values.reshape((-1,1))
+        hydrophobicity = DAT['Hydrophobicity'].values.reshape((-1,1))
+        # depth = DAT['Depth'].values.reshape((-1,1))
+        # in_groove = DAT['InGroove'].values.reshape((-1,1))
 
-        return resnum, coord, charge, depth, in_groove
+        return resnum, coord, charge, hydrophobicity
 
     def AssignWeight(self, resnum, WeightDict):
         weight = []
@@ -91,38 +95,57 @@ class Calculator():
 
         # print(f"Simi: {comb}")
         
-        resnumA, CoordA, ChargeA, DepthA, GrooveA = self.ParamExtract(f"{self.DATDir}/{comb[0]}.csv")
-        resnumB, CoordB, ChargeB, DepthB, GrooveB = self.ParamExtract(f"{self.DATDir}/{comb[1]}.csv")
+        resnumA, CoordA, ChargeA, HydroA = self.ParamExtract(f"{self.DATDir}/{comb[0]}.csv")
+        resnumB, CoordB, ChargeB, HydroB = self.ParamExtract(f"{self.DATDir}/{comb[1]}.csv")
         # print(CoordA.shape)
 
-        # filter atoms
+        ## ===== filter atoms =====
+
+        # skip hydrogens
+        passA = ~np.isnan(HydroA).reshape(-1)
+        passB = ~np.isnan(HydroB).reshape(-1)
+
+        resnumA = resnumA[passA]
+        CoordA = CoordA[passA]
+        ChargeA = ChargeA[passA]
+        HydroA = HydroA[passA]
+
+        resnumB = resnumB[passB]
+        CoordB = CoordB[passB]
+        ChargeB = ChargeB[passB]
+        HydroB = HydroB[passB]
+
+        # calculate only on contact residues
         if self.ContactResi:
             passA = np.isin(resnumA, self.ContactResi).reshape(-1)
             resnumA = resnumA[passA]
             CoordA = CoordA[passA]
             ChargeA = ChargeA[passA]
-            DepthA = DepthA[passA]
+            HydroA = HydroA[passA]
+            # DepthA = DepthA[passA]
 
             passB = np.isin(resnumB, self.ContactResi).reshape(-1)
             resnumB = resnumB[passB]
             CoordB = CoordB[passB]
             ChargeB = ChargeB[passB]
-            DepthB = DepthB[passB]
-
+            HydroB = HydroB[passB]
+            # DepthB = DepthB[passB]
+        
+        """
         if self.OnlyGroove:
             passA = GrooveA == 1
             passA = passA.reshape(-1)
             resnumA = resnumA[passA]
             CoordA = CoordA[passA]
             ChargeA = ChargeA[passA]
-            DepthA = DepthA[passA]
+            # DepthA = DepthA[passA]
 
             passB = GrooveB == 1
             passB = passB.reshape(-1)
             resnumB = resnumB[passB]
             CoordB = CoordB[passB]
             ChargeB = ChargeB[passB]
-            DepthB = DepthB[passB]
+            # DepthB = DepthB[passB]
 
         if self.depth_cut:
             passA = DepthA <= self.depth_cut
@@ -130,14 +153,15 @@ class Calculator():
             resnumA = resnumA[passA]
             CoordA = CoordA[passA]
             ChargeA = ChargeA[passA]
-            DepthA = DepthA[passA]
+            # DepthA = DepthA[passA]
 
             passB = DepthB <= self.depth_cut
             passB = passB.reshape(-1)
             resnumB = resnumB[passB]
             CoordB = CoordB[passB]
             ChargeB = ChargeB[passB]
-            DepthB = DepthB[passB]
+            # DepthB = DepthB[passB]
+        """
 
         # weigh atoms
         if self.Weight:
@@ -154,7 +178,7 @@ class Calculator():
             WeightA = np.ones_like(resnumA)
             WeightB = np.ones_like(resnumB)
         
-        return (comb, self.CloudSimilarity(CoordA, ChargeA, CoordB, ChargeB, DepthA, DepthB, WeightA, WeightB))
+        return (comb, self.CloudSimilarity(CoordA, ChargeA, HydroA, CoordB, ChargeB, HydroB, WeightA, WeightB))
 
     def CalcDist(self):
         

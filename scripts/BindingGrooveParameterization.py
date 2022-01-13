@@ -32,7 +32,7 @@ from pymol import cmd
 
 import pandas as pd
 
-from PropertyParams import PartialCharge
+from PropertyParams import PartialCharge, AtomicHydrophobicity
 from CGmodel import CenterOfMass
 
 class ChainSelector:
@@ -276,6 +276,7 @@ def PDB_to_csv(InDir, OutDir):
     #     ffcharge = pickle.load(inf)
 
     ffcharge = PartialCharge
+    ffhydro = AtomicHydrophobicity
 
     # with open('pep_surf.pkl', 'rb') as inf:
     #     pep = pickle.load(inf)
@@ -309,23 +310,25 @@ def PDB_to_csv(InDir, OutDir):
                     if residue.has_id("HE2"):
                         
                         if residue.has_id("HD1"):
-                            ResName = "HIP" # H on both epsilon and delta N
+                            ResName2 = "HIP" # H on both epsilon and delta N
                         else:
-                            ResName = "HIE" # H on epsilon N only
+                            ResName2 = "HIE" # H on epsilon N only
 
                     else:
-                        ResName = "HID" # H on delta N only. By default HIS is HID
+                        ResName2 = "HID" # H on delta N only. By default HIS is HID
+                else:
+                    ResName2 = ResName
                 
                 for atom in residue:
                     #print(atom.__dict__)
                     X_coord, Y_coord, Z_coord = atom.coord[0:3]
                     OutList.append([ResName, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
-                    , ffcharge[ResName][atom.name.lstrip(digits)]])
+                    , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)]])
 
             OutList = np.array(OutList)
             # ResiDepth = resi_depth(TStruct, OutList[:,4:7], pep)
             # InGroove = in_groove(f"{InDir}/{InPDB}", TStruct, OutList[:,4:7], pep)
-            ResiDepth = InGroove = np.zeros((OutList.shape[0],1))
+            # ResiDepth = InGroove = np.zeros((OutList.shape[0],1))
 
             # print(OutList[:,4:7].shape)
             # print(ResiDepth.shape)
@@ -333,8 +336,8 @@ def PDB_to_csv(InDir, OutDir):
             # OutList = np.hstack((OutList, InGroove))
             # OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "InGroove"])
 
-            OutList = np.hstack((OutList, ResiDepth, InGroove))
-            OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Depth", "InGroove"])
+            # OutList = np.hstack((OutList, ResiDepth, InGroove))
+            OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity"])
 
             OutDF.to_csv(f"{OutDir}/{InPDB.split('.')[0] + '.csv'}", index=False)
             # sys.exit()
@@ -428,13 +431,14 @@ if __name__ == "__main__":
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
     # for allele in ["A0201"]:
+        # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
 
-    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
-    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
+    PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
+    PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
 
-    FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG_DAT")
-    FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG_DAT")
+    # FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG_DAT")
+    # FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG_DAT")
     
     ## ====homology models====
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")

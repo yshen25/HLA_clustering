@@ -47,10 +47,10 @@ pdb_id = ["3mre","3d25","6trn","5n1y","1i4f","6o53","4u6y","5ddh","6o4z","2gtw",
     ,"3o4l","1bd2","2pye","3qeq","3qdm","3qdj","3qdg","6tro","1oga","2vlr","2vlj","2vlk"
         ,"6rpb","6rpa","6rp9","3gsn","5tez"]
 
-PDBDIr = "peptide_pdb"
-TrimDir = "peptide_trim"
-AlignDir = "peptide_aln"
-PepDir = "peptide_pep"
+PDBDIr = "/crystal/A0201/peptide_pdb"
+TrimDir = "../crystal/A0201/peptide_trim"
+AlignDir = "../crystal/A0201/peptide_aln"
+PepDir = "../crystal/A0201/peptide_pep"
 TemplatePDB = "1i4f_Crown.pdb"
 OutCSV = "peptide_trim.csv"
 
@@ -215,7 +215,8 @@ def step3():
 ### align to A0201 template, then remove A chain
 def step4():
 
-    PDB_align(TrimDir, "1i4f_Crown.pdb", AlignDir)
+    PDB_align(TrimDir, TemplatePDB, AlignDir)
+
     parser = PDBParser(PERMISSIVE=1, QUIET=1)
 
     for InPDB in os.listdir(AlignDir):
@@ -267,4 +268,4 @@ def step5():
     
     return
 
-step5()
+step4()
