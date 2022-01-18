@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import os
-import time
 from scipy.spatial.distance import cdist
 from itertools import combinations, combinations_with_replacement
 from multiprocessing import Pool
 
 import numpy as np
 # from scipy.stats import hypsecant
-
 import pandas as pd
 
 class Calculator():

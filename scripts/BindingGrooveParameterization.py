@@ -83,8 +83,8 @@ class ChainSelector:
 
         # if _hydrogen.match(atom.get_id()): # remove hydrogens
         #     return 0
-        # if "H" in atom.get_id(): # new way to remove hydrogens
-        #     return 0
+        if "H" in atom.get_id(): # new way to remove hydrogens
+            return 0
 
         if atom.altloc not in [" ", "A"]: # remove altloc atoms
             return 0
@@ -320,7 +320,10 @@ def PDB_to_csv(InDir, OutDir):
                     ResName2 = ResName
                 
                 for atom in residue:
-                    #print(atom.__dict__)
+                    # Rosetta relax will automaticly change last Oxigen from O to OXT
+                    if atom.name == "OXT":
+                        atom.name = "O"
+
                     X_coord, Y_coord, Z_coord = atom.coord[0:3]
                     OutList.append([ResName, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
                     , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)]])
@@ -421,11 +424,14 @@ def FullAtom_to_CG(DATDir, OutDir):
 if __name__ == "__main__":
 
     ## ====relaxed====
-    # PDB_preprocess("HLAA_relax/PDB", "1i4f_Crown.pdb", "HLAA_relax/TRIM", "HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
-    # PDB_preprocess("HLAB_relax/PDB", "1i4f_Crown.pdb", "HLAB_relax/TRIM", "HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
+    # PDB_preprocess("../HLAA_relax/PDB", "1i4f_Crown.pdb", "../HLAA_relax/TRIM", "../HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
+    # PDB_preprocess("../HLAB_relax/PDB", "1i4f_Crown.pdb", "../HLAB_relax/TRIM", "../HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
 
-    # PDB_to_csv("HLAA_relax/ALIGN", "HLAA_relax/DAT")
-    # PDB_to_csv("HLAB_relax/ALIGN", "HLAB_relax/DAT")
+    # PDB_to_csv("../HLAA_relax/ALIGN", "../HLAA_relax/DAT")
+    # PDB_to_csv("../HLAB_relax/ALIGN", "../HLAB_relax/DAT")
+
+    # FullAtom_to_CG("../HLAA_relax/DAT", "../HLAA_relax/CG_DAT")
+    # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
     ## ====crystal====
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
@@ -434,8 +440,8 @@ if __name__ == "__main__":
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
 
-    PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
-    PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
+    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
+    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
 
     # FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG_DAT")
     # FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG_DAT")
@@ -445,12 +451,15 @@ if __name__ == "__main__":
     # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
     # PDB_to_csv("../HLAA_Aligned", "../HLAA_DAT")
     # PDB_to_csv("../HLAB_Aligned", "../HLAB_DAT")
-    # CP_template("../HLAA_DAT", "../HLAA_reference_panel/DAT", "../HLAA_Aligned", "../HLAA_reference_panel/ALIGN")
-    # CP_template("../HLAB_DAT", "../HLAB_reference_panel/DAT", "../HLAB_Aligned", "../HLAB_reference_panel/ALIGN")
+    CP_template("../HLAA_relax/DAT", "../HLAA_reference_panel/DAT", "../HLAA_relax/ALIGN", "../HLAA_reference_panel/ALIGN")
+    CP_template("../HLAB_relax/DAT", "../HLAB_reference_panel/DAT", "../HLAB_relax/ALIGN", "../HLAB_reference_panel/ALIGN")
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
 
     # FullAtom_to_CG("../HLAA_DAT", "../HLAA_CG_DAT")
     # FullAtom_to_CG("../HLAB_DAT", "../HLAB_CG_DAT")
+
+    ## ==== figures ====
+    # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
 
     pass
