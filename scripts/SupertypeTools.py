@@ -1,3 +1,4 @@
+from turtle import right
 from sklearn.cluster import DBSCAN
 import pandas as pd
 import numpy as np
@@ -35,21 +36,31 @@ def CGCalcMat(DATDir, OutCSV, contact, weight, pairwise=False):
     return calc.DistMat
 
 # ==== universal tools ====
-def heatmap(Mat, order=None, size=(10,10)):
+def heatmap(Mat, order=None, size=(10,10), label=True):
     # Mat = pd.read_csv(InCSV, index_col=0)
     Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
+
     if order:
         split = np.cumsum([len(sublist) for sublist in order])
         # print(split)
         flat_order = [item for sublist in order for item in sublist]
-        Mat = Mat[flat_order]
-        Mat = Mat.reindex(flat_order)
+        Mat = Mat[flat_order] # re-arrange row order
+        Mat = Mat.reindex(flat_order) # re-arrange column order
     # print(Mat.index, Mat.columns)
 
-    plt.figure(figsize=size, facecolor="w")
+    # fig, axs = plt.subplots(figsize=size)
+    plt.figure(figsize=size)
     
-    sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True)
+    g = sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True, cbar_kws={"shrink": .8})
+    g.axes.tick_params(axis='both', labelsize=8, pad=40)
+    if label:
+        g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
+        g.axes.set_yticklabels(labels=label,va='center',ha='left')
+
+    else:
+        g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
+        g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
 
     # seperate lines between
     for line in split[:-1]:
@@ -106,6 +117,6 @@ def Matrix2Dendro(Mat, OutTreeFile=None):
 
     if OutTreeFile:
         with open(OutTreeFile, "w") as out:
-            out.write(tree)
+            out.write(str(tree))
     
     return
