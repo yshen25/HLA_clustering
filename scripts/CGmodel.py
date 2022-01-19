@@ -227,3 +227,15 @@ class CGCalculator():
         self.DistMat.to_csv(self.OutCSV)
         
         return
+
+def CG_RMSD(InDAT, RefDAT):
+    """
+    RMSD of coarse-grained representations assumes that residues are one-by-one aligned
+    """
+    in_df = pd.read_csv(InDAT)
+    ref_df = pd.read_csv(RefDAT)
+    in_coord = in_df[['X', 'Y', 'Z']].values
+    ref_coord = ref_df[['X', 'Y', 'Z']].values
+
+    RMSD = np.sqrt(np.linalg.norm(in_coord-ref_coord)/len(in_df))
+    return RMSD

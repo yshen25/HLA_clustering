@@ -109,14 +109,25 @@ def dendro(Mat, OutTreeFile):
     return
 """
 
-def Matrix2Dendro(Mat, OutTreeFile=None):
+def Matrix2Dendro(Mat, OutTreeFile=None, label=None):
     Mat = Mat.add(Mat.T, fill_value=0)
+    
+    # if label:
+    #     Mat = pd.DataFrame(Mat.values, index=label, columns=label)
+    #     print(Mat)
+
     dm = DistanceMatrix(Mat, Mat.columns)
     tree = nj(dm)
-    print(tree.ascii_art())
+    # print(tree.ascii_art())
 
     if OutTreeFile:
+        result = str(tree)
+
+        if label:
+            for old_string, dst_string in zip(Mat.columns, label):
+                result = result.replace(old_string, dst_string)
+        
         with open(OutTreeFile, "w") as out:
-            out.write(str(tree))
+            out.write(result)
     
     return

@@ -451,8 +451,8 @@ if __name__ == "__main__":
     # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
     # PDB_to_csv("../HLAA_Aligned", "../HLAA_DAT")
     # PDB_to_csv("../HLAB_Aligned", "../HLAB_DAT")
-    CP_template("../HLAA_relax/DAT", "../HLAA_reference_panel/DAT", "../HLAA_relax/ALIGN", "../HLAA_reference_panel/ALIGN")
-    CP_template("../HLAB_relax/DAT", "../HLAB_reference_panel/DAT", "../HLAB_relax/ALIGN", "../HLAB_reference_panel/ALIGN")
+    # CP_template("../HLAA_relax/DAT", "../HLAA_reference_panel/DAT", "../HLAA_relax/ALIGN", "../HLAA_reference_panel/ALIGN")
+    # CP_template("../HLAB_relax/DAT", "../HLAB_reference_panel/DAT", "../HLAB_relax/ALIGN", "../HLAB_reference_panel/ALIGN")
     # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
     # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
 
@@ -461,5 +461,12 @@ if __name__ == "__main__":
 
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
+
+    A_list = ["A01_01", "A02_01", "A02_06", "A03_01", "A11_01", "A23_01", "A24_02", "A30_03", "A68_01"]
+    B_list = ["B07_02", "B08_01", "B14_02", "B15_01", "B18_01", "B27_03", "B27_05", "B27_09", "B35_01",
+        "B37_01", "B39_01", "B42_01", "B44_02", "B44_03", "B51_01", "B53_01", "B57_01", "B58_01"]
+    for allele in A_list+B_list:
+        # PDB_to_csv(f"../crystal/{allele}/ALIGN", f"../crystal/{allele}/DAT")
+        FullAtom_to_CG(f"../crystal/{allele}/DAT", f"../crystal/{allele}/CG_DAT")
 
     pass
