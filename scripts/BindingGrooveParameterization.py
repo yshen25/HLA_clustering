@@ -461,12 +461,14 @@ if __name__ == "__main__":
 
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
-
-    A_list = ["A01_01", "A02_01", "A02_06", "A03_01", "A11_01", "A23_01", "A24_02", "A30_03", "A68_01"]
-    B_list = ["B07_02", "B08_01", "B14_02", "B15_01", "B18_01", "B27_03", "B27_05", "B27_09", "B35_01",
-        "B37_01", "B39_01", "B42_01", "B44_02", "B44_03", "B51_01", "B53_01", "B57_01", "B58_01"]
-    for allele in A_list+B_list:
-        # PDB_to_csv(f"../crystal/{allele}/ALIGN", f"../crystal/{allele}/DAT")
-        FullAtom_to_CG(f"../crystal/{allele}/DAT", f"../crystal/{allele}/CG_DAT")
+    # ext_list = ["A30_01", "A02_03", "A02_07", "B27_04", "B27_06", "B40_01", "B40_02", "B46_01"]
+    
+    # A_list = ["A01_01", "A02_01", "A02_06", "A03_01", "A11_01", "A23_01", "A24_02", "A30_03", "A68_01"]
+    # B_list = ["B07_02", "B08_01", "B14_02", "B15_01", "B18_01", "B27_03", "B27_05", "B27_09", "B35_01",
+    #     "B37_01", "B39_01", "B42_01", "B44_02", "B44_03", "B51_01", "B53_01", "B57_01", "B58_01"]
+    # for allele in ext_list:
+    #     PDB_to_csv(f"../crystal/{allele}/ALIGN", f"../crystal/{allele}/DAT")
+    #     FullAtom_to_CG(f"../crystal/{allele}/DAT", f"../crystal/{allele}/CG_DAT")
+    FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/HLA-A/DAT", "../Figures/Figure2_clustering_cr_hm/HLA-A/CG_DAT")
 
     pass

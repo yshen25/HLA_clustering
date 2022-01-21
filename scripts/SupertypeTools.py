@@ -36,15 +36,16 @@ def CGCalcMat(DATDir, OutCSV, contact, weight, pairwise=False):
     return calc.DistMat
 
 # ==== universal tools ====
-def heatmap(Mat, order=None, size=(10,10), label=True):
+def heatmap(Mat, order=None, size=(10,10), label=False, line=False):
     # Mat = pd.read_csv(InCSV, index_col=0)
     Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
 
     if order:
-        split = np.cumsum([len(sublist) for sublist in order])
-        # print(split)
-        flat_order = [item for sublist in order for item in sublist]
+        if line:
+            flat_order = [item for sublist in order for item in sublist]
+        else:
+            flat_order = order
         Mat = Mat[flat_order] # re-arrange row order
         Mat = Mat.reindex(flat_order) # re-arrange column order
     # print(Mat.index, Mat.columns)
@@ -63,9 +64,12 @@ def heatmap(Mat, order=None, size=(10,10), label=True):
         g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
 
     # seperate lines between
-    for line in split[:-1]:
-        plt.axhline(y=line, color='k', linestyle='-')
-        plt.axvline(x=line, color='k', linestyle='-')
+    if line:
+        split = np.cumsum([len(sublist) for sublist in order])
+        # print(split)
+        for line in split[:-1]:
+            plt.axhline(y=line, color='k', linestyle='-')
+            plt.axvline(x=line, color='k', linestyle='-')
     plt.show()
     return
 
