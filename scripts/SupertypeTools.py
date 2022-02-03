@@ -13,12 +13,14 @@ from skbio.tree import nj
 from CalcScore import Calculator
 from CGmodel import CGCalculator
 
+from Bio import SeqIO, Align
+from itertools import combinations
 # ==== full atom tools ====
-def CalcMat(DATDir, OutCSV, contact, weight):
+def CalcMat(DATDir, AlleleListFile, OutCSV, contact, weight):
     # l: charge param
     # s: spatial param
     # d: depth param
-    calc = Calculator(DATDir, OutCSV, ContactResi=contact, ResiWeight=weight)
+    calc = Calculator(DATDir, AlleleListFile, OutCSV, ContactResi=contact, ResiWeight=weight)
     # calc.l = l
     # calc.sigma = s
     # calc.d = d
@@ -27,9 +29,9 @@ def CalcMat(DATDir, OutCSV, contact, weight):
     return calc.DistMat
 
 # ==== coarse grain tools ====
-def CGCalcMat(DATDir, OutCSV, contact, weight, pairwise=False):
+def CGCalcMat(DATDir, AlleleListFile, OutCSV, contact, weight, pairwise=False):
 
-    calc = CGCalculator(DATDir, OutCSV, ContactResi=contact, ResiWeight=weight, Pairwise=pairwise)
+    calc = CGCalculator(DATDir ,AlleleListFile, OutCSV, ContactResi=contact, ResiWeight=weight, Pairwise=pairwise)
 
     calc.CalcDist()
 
@@ -54,7 +56,7 @@ def heatmap(Mat, order=None, size=(10,10), label=False, line=False):
     plt.figure(figsize=size)
     
     g = sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True, cbar_kws={"shrink": .8})
-    g.axes.tick_params(axis='both', labelsize=8, pad=40)
+    g.axes.tick_params(axis='both', labelsize=8, pad=45)
     if label:
         g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
         g.axes.set_yticklabels(labels=label,va='center',ha='left')
@@ -135,3 +137,20 @@ def Matrix2Dendro(Mat, OutTreeFile=None, label=None):
             out.write(result)
     
     return
+
+def MSAMat(InFile, scale=0.01):
+    allele_dict = SeqIO.to_dict(SeqIO.parse(InFile, "fasta"))
+
+    # AlleleComb_wi = combinations_with_replacement(DATList, 2)
+    allele_list = list(allele_dict.keys())
+    AlleleComb_wo = combinations(allele_list, 2)
+    DistMat = pd.DataFrame(np.zeros((len(allele_list), len(allele_list))), index=allele_list, columns=allele_list)
+    # print(AlleleComb_wo)
+
+    aligner = Align.PairwiseAligner()
+    aligner.substitution_matrix = Align.substitution_matrices.load("BLOSUM62")
+
+    for comb in AlleleComb_wo:
+        DistMat.loc[comb[1],comb[0]] = np.reciprocal(aligner.score(allele_dict[comb[1]].seq, allele_dict[comb[0]].seq)*scale)
+
+    return DistMat

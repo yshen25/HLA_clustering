@@ -12,7 +12,7 @@ import pandas as pd
 
 class Calculator():
 
-    def __init__(self, DATDir, OutCSV, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
+    def __init__(self, DATDir, AlleleListFile, OutCSV, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
         
         # # fixed parameters
         # self.l = 10 # charge param
@@ -25,15 +25,32 @@ class Calculator():
         self.Weight = ResiWeight
         self.OnlyGroove = 0
         self.depth_cut = depth_cut
+
+        with open(AlleleListFile, "r") as ALF:
+            AlleleList = [line.strip() for line in ALF]
         
         # Allele combinations
 
-        DATList = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(DATDir)) if InDAT.endswith(".csv")]
-        self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
-        self.AlleleComb_wo = combinations(DATList, 2)
-        
+        # DATList = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(DATDir)) if InDAT.endswith(".csv")]
+        # self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
+        # self.AlleleComb_wo = combinations(DATList, 2)
+        self.check_files(DATDir, AlleleList)
+        self.AlleleComb_wi = combinations_with_replacement(AlleleList, 2)
+        self.AlleleComb_wo = combinations(AlleleList, 2)
+
         # Distance matrix for output, in lower triangular form
-        self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
+
+        # self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
+        self.DistMat = pd.DataFrame(np.zeros((len(AlleleList), len(AlleleList))), index=AlleleList, columns=AlleleList)
+
+    def check_files(self, DATDir, AlleleList):
+        ExistFiles = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(DATDir)) if InDAT.endswith(".csv")]
+        missing = [allele for allele in AlleleList if allele not in ExistFiles]
+
+        if missing:
+            raise ValueError(f"Listed allele not exist in directory: {missing}")
+
+        return
 
     def CloudSimilarity(self, CoordA, ChargeA, HydroA, CoordB, ChargeB, HydroB, WeightA, WeightB):
         """

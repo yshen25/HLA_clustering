@@ -62,7 +62,7 @@ class CGCalculator():
     """
     Calculate distance between CG models
     """
-    def __init__(self, DATDir, OutCSV, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
+    def __init__(self, CG_DATDir, AlleleListFile, OutCSV, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
         
         # first, check if pairwise mode seeting is correct
         # number of residues between two molecules must be the same
@@ -72,20 +72,36 @@ class CGCalculator():
         self.pairwise = Pairwise # controls pairwise matrices or all-to-all matrices
         
         self.OutCSV = OutCSV
-        self.DATDir = DATDir
+        self.DATDir = CG_DATDir
         self.AASimDict = AASim
 
         self.ContactResi = ContactResi
         self.Weight = ResiWeight
         self.OnlyGroove = 0
 
+        with open(AlleleListFile, "r") as ALF:
+            AlleleList = [line.strip() for line in ALF]
+
         # Allele combinations
-        DATList = [a.split(".")[0] for a in sorted(os.listdir(DATDir))]
-        self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
-        self.AlleleComb_wo = combinations(DATList, 2)
+        # DATList = [a.split(".")[0] for a in sorted(os.listdir(CG_DATDir))]
+        # self.AlleleComb_wi = combinations_with_replacement(DATList, 2)
+        # self.AlleleComb_wo = combinations(DATList, 2)
+
+        self.check_files(CG_DATDir, AlleleList)
+        self.AlleleComb_wi = combinations_with_replacement(AlleleList, 2)
+        self.AlleleComb_wo = combinations(AlleleList, 2)
 
         # Distance matrix for output, in lower triangular form
-        self.DistMat = pd.DataFrame(np.zeros((len(DATList), len(DATList))), index=DATList, columns=DATList)
+        self.DistMat = pd.DataFrame(np.zeros((len(AlleleList), len(AlleleList))), index=AlleleList, columns=AlleleList)
+
+    def check_files(self, CG_DATDir, AlleleList):
+        ExistFiles = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(CG_DATDir)) if InDAT.endswith(".csv")]
+        missing = [allele for allele in AlleleList if allele not in ExistFiles]
+
+        if missing:
+            raise ValueError(f"Listed allele not exist in directory: {missing}")
+
+        return
 
     def ResiPairSim(self, ResiA, ResiB):
         """

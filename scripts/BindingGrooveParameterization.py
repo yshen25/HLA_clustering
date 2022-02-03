@@ -427,7 +427,9 @@ if __name__ == "__main__":
     # PDB_preprocess("../HLAA_relax/PDB", "1i4f_Crown.pdb", "../HLAA_relax/TRIM", "../HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
     # PDB_preprocess("../HLAB_relax/PDB", "1i4f_Crown.pdb", "../HLAB_relax/TRIM", "../HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
 
-    # PDB_to_csv("../HLAA_relax/ALIGN", "../HLAA_relax/DAT")
+    PDB_preprocess("../ext_model/PDB", "1i4f_Crown.pdb", "../ext_model/TRIM", "../ext_model/ALIGN", "ext_relax_trim.csv")
+    PDB_to_csv("../ext_model/ALIGN", "../ext_model/DAT")
+    FullAtom_to_CG("../ext_model/DAT", "../ext_model/CG_DAT")
     # PDB_to_csv("../HLAB_relax/ALIGN", "../HLAB_relax/DAT")
 
     # FullAtom_to_CG("../HLAA_relax/DAT", "../HLAA_relax/CG_DAT")
@@ -469,6 +471,6 @@ if __name__ == "__main__":
     # for allele in ext_list:
     #     PDB_to_csv(f"../crystal/{allele}/ALIGN", f"../crystal/{allele}/DAT")
     #     FullAtom_to_CG(f"../crystal/{allele}/DAT", f"../crystal/{allele}/CG_DAT")
-    FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/HLA-A/DAT", "../Figures/Figure2_clustering_cr_hm/HLA-A/CG_DAT")
+    # FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/HLA-A/DAT", "../Figures/Figure2_clustering_cr_hm/HLA-A/CG_DAT")
 
     pass
