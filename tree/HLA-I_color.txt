@@ -1,0 +1,533 @@
+TREE_COLORS
+#use this template to define branch colors and styles, colored ranges and label colors/font styles/backgrounds
+#lines starting with a hash are comments and ignored during parsing
+
+#=================================================================#
+#     MANDATORY SETTINGS       #
+#=================================================================#
+#select the separator which is used to delimit the data below (TAB,SPACE or COMMA).This separator must be used throughout this file.
+
+# SEPARATOR TAB
+SEPARATOR SPACE
+#SEPARATOR COMMA
+
+#First 3 fields define the node, type and color
+#Possible types are:
+#'range': defines a colored range (colored background for labels/clade)
+#'clade': defines color/style for all branches in a clade
+#'branch': defines color/style for a single branch
+#'label': defines font color/style for the leaf label
+#'label_background': defines the leaf label background color
+
+#The following additional fields are required:
+#for 'range', field 4 defines the colored range label (used in the legend)
+
+#The following additional fields are optional:
+#for 'label', field 4 defines the font style ('normal',''bold', 'italic' or 'bold-italic') and field 5 defines the numeric scale factor for the font size (eg. with value 2, font size for that label will be 2x the standard size)
+#for 'clade' and 'branch', field 4 defines the branch style ('normal' or 'dashed') and field 5 defines the branch width scale factor (eg. with value 0.5, branch width for that clade will be 0.5 the standard width)
+
+#Internal tree nodes can be specified using IDs directly, or using the 'last common ancestor' method described in iTOL help pages
+#=================================================================#
+#  Actual data follows after the "DATA" keyword    #
+#=================================================================#
+DATA
+#NODE_ID TYPE COLOR LABEL_OR_STYLE SIZE_FACTOR
+
+#Examples
+#internal node with solid branches colored blue and twice the standard width
+#9031|9606 clade #DB6D2D normal 2
+#internal node with dashed branches colored red and one half the standard width
+#601|340 clade #E825B2 dashed 0.5
+#a single internal branch colored green, dashed and 5 times the normal width
+#915|777 branch #F23727 dashed 5
+
+#colored range covering all leaves of an internal node, colored red and with label 'Eukaryota'
+#184922|9606 range #E825B2 Eukaryota
+#examples of colored ranges from iTOL's Tree of Life
+#2190|2287 range #aaffaa Archaea
+#623|1502 range #aaaaff Bacteria
+
+#leaf label for node 9606 will be displayed in green, bold and twice the regular font size
+#9606 label #F23727 bold 2
+
+#leaf label for node 9031 will be displayed in yellow, bold italic and half the regular font size
+#9031 label #ffff00 bold-italic 0.5
+
+#leaf label for node 8015 will be displayed in blue
+#8015 label #DB6D2D
+
+#leaf label for node 9606 will have a semi-transparent red background
+#9606 label_background rgba(255,0,0,0.5)
+
+A24_24_CG label #ffffff
+A25_01_CG label #ffffff
+A30_02_CG label #ffffff
+A30_15_CG label #ffffff
+A31_08_CG label #ffffff
+A32_106_CG label #ffffff
+A43_01_CG label #ffffff
+A69_01_CG label #ffffff
+B08_03_CG label #ffffff
+B13_38_CG label #ffffff
+B15_13_CG label #ffffff
+B15_23_CG label #ffffff
+B15_36_CG label #ffffff
+B27_01_CG label #ffffff
+B27_02_CG label #ffffff
+B27_03_CG label #ffffff
+B27_05_CG label #ffffff
+B27_06_CG label #ffffff
+B27_07_CG label #ffffff
+B27_14_CG label #ffffff
+B37_01_CG label #ffffff
+B38_02_CG label #ffffff
+B39_02_CG label #ffffff
+B39_20_CG label #ffffff
+B39_24_CG label #ffffff
+B40_07_CG label #ffffff
+B44_06_CG label #ffffff
+B46_01_CG label #ffffff
+B50_01_CG label #ffffff
+B51_07_CG label #ffffff
+B56_03_CG label #ffffff
+B58_06_CG label #ffffff
+B73_01_CG label #ffffff
+B78_03_CG label #ffffff
+C01_03_CG label #ffffff
+C01_04_CG label #ffffff
+C03_15_CG label #ffffff
+C04_03_CG label #ffffff
+C04_43_CG label #ffffff
+C14_04_CG label #ffffff
+
+A01_01_CG label #E825B2
+A01_02_CG label #E825B2
+A01_03_CG label #E825B2
+A01_06_CG label #E825B2
+A01_17_CG label #E825B2
+A01_23_CG label #E825B2
+A01_36_CG label #E825B2
+A03_01_CG label #E825B2
+A03_02_CG label #E825B2
+A03_08_CG label #E825B2
+A03_27_CG label #E825B2
+A11_01_CG label #E825B2
+A11_02_CG label #E825B2
+A11_03_CG label #E825B2
+A11_04_CG label #E825B2
+A11_05_CG label #E825B2
+A11_06_CG label #E825B2
+A11_12_CG label #E825B2
+A26_01_CG label #E825B2
+A26_02_CG label #E825B2
+A26_03_CG label #E825B2
+A26_08_CG label #E825B2
+A26_12_CG label #E825B2
+A26_13_CG label #E825B2
+A26_14_CG label #E825B2
+A26_16_CG label #E825B2
+A29_01_CG label #E825B2
+A29_02_CG label #E825B2
+A29_10_CG label #E825B2
+A29_11_CG label #E825B2
+A29_50_CG label #E825B2
+A30_01_CG label #E825B2
+A30_03_CG label #E825B2
+A30_04_CG label #E825B2
+A30_10_CG label #E825B2
+A31_01_CG label #E825B2
+A31_02_CG label #E825B2
+A31_03_CG label #E825B2
+A31_04_CG label #E825B2
+A31_09_CG label #E825B2
+A31_12_CG label #E825B2
+A31_29_CG label #E825B2
+A33_01_CG label #E825B2
+A33_03_CG label #E825B2
+A33_18_CG label #E825B2
+A34_01_CG label #E825B2
+A34_02_CG label #E825B2
+A36_01_CG label #E825B2
+A66_01_CG label #E825B2
+A66_02_CG label #E825B2
+A66_03_CG label #E825B2
+A68_01_CG label #E825B2
+A68_02_CG label #E825B2
+A68_03_CG label #E825B2
+A68_05_CG label #E825B2
+A68_06_CG label #E825B2
+A68_16_CG label #E825B2
+A68_30_CG label #E825B2
+A74_01_CG label #E825B2
+A74_02_CG label #E825B2
+A74_03_CG label #E825B2
+A80_01_CG label #E825B2
+
+A02_01_CG label #F23727
+A02_02_CG label #F23727
+A02_03_CG label #F23727
+A02_04_CG label #F23727
+A02_05_CG label #F23727
+A02_06_CG label #F23727
+A02_07_CG label #F23727
+A02_08_CG label #F23727
+A02_09_CG label #F23727
+A02_10_CG label #F23727
+A02_11_CG label #F23727
+A02_12_CG label #F23727
+A02_13_CG label #F23727
+A02_14_CG label #F23727
+A02_16_CG label #F23727
+A02_17_CG label #F23727
+A02_19_CG label #F23727
+A02_197_CG label #F23727
+A02_20_CG label #F23727
+A02_22_CG label #F23727
+A02_24_CG label #F23727
+A02_240_CG label #F23727
+A02_34_CG label #F23727
+A02_36_CG label #F23727
+A02_44_CG label #F23727
+A02_46_CG label #F23727
+A02_48_CG label #F23727
+A02_50_CG label #F23727
+A02_52_CG label #F23727
+A02_61_CG label #F23727
+
+A23_01_CG label #DB6D2D
+A23_05_CG label #DB6D2D
+A23_17_CG label #DB6D2D
+A24_02_CG label #DB6D2D
+A24_03_CG label #DB6D2D
+A24_04_CG label #DB6D2D
+A24_05_CG label #DB6D2D
+A24_06_CG label #DB6D2D
+A24_07_CG label #DB6D2D
+A24_08_CG label #DB6D2D
+A24_10_CG label #DB6D2D
+A24_13_CG label #DB6D2D
+A24_14_CG label #DB6D2D
+A24_143_CG label #DB6D2D
+A24_17_CG label #DB6D2D
+A24_20_CG label #DB6D2D
+A24_23_CG label #DB6D2D
+A24_242_CG label #DB6D2D
+A24_25_CG label #DB6D2D
+A24_28_CG label #DB6D2D
+A24_41_CG label #DB6D2D
+A24_51_CG label #DB6D2D
+
+A29_03_CG label #F2A827
+A29_25_CG label #F2A827
+
+A32_01_CG label #EBC509
+A32_02_CG label #EBC509
+A32_04_CG label #EBC509
+
+B07_02_CG label #E8E34A
+B07_03_CG label #E8E34A
+B07_05_CG label #E8E34A
+B07_06_CG label #E8E34A
+B07_07_CG label #E8E34A
+B07_08_CG label #E8E34A
+B07_105_CG label #E8E34A
+B07_35_CG label #E8E34A
+B07_75_CG label #E8E34A
+B07_91_CG label #E8E34A
+B07_96_CG label #E8E34A
+B14_01_CG label #E8E34A
+B14_02_CG label #E8E34A
+B14_03_CG label #E8E34A
+B14_04_CG label #E8E34A
+B14_05_CG label #E8E34A
+B14_06_CG label #E8E34A
+B14_11_CG label #E8E34A
+B15_01_CG label #E8E34A
+B15_02_CG label #E8E34A
+B15_03_CG label #E8E34A
+B15_04_CG label #E8E34A
+B15_05_CG label #E8E34A
+B15_06_CG label #E8E34A
+B15_07_CG label #E8E34A
+B15_08_CG label #E8E34A
+B15_09_CG label #E8E34A
+B15_10_CG label #E8E34A
+B15_11_CG label #E8E34A
+B15_12_CG label #E8E34A
+B15_15_CG label #E8E34A
+B15_18_CG label #E8E34A
+B15_20_CG label #E8E34A
+B15_21_CG label #E8E34A
+B15_24_CG label #E8E34A
+B15_25_CG label #E8E34A
+B15_27_CG label #E8E34A
+B15_29_CG label #E8E34A
+B15_30_CG label #E8E34A
+B15_31_CG label #E8E34A
+B15_32_CG label #E8E34A
+B15_34_CG label #E8E34A
+B15_35_CG label #E8E34A
+B15_37_CG label #E8E34A
+B15_39_CG label #E8E34A
+B15_46_CG label #E8E34A
+B15_58_CG label #E8E34A
+B15_93_CG label #E8E34A
+B18_01_CG label #E8E34A
+B18_02_CG label #E8E34A
+B18_03_CG label #E8E34A
+B18_04_CG label #E8E34A
+B18_05_CG label #E8E34A
+B18_06_CG label #E8E34A
+B18_07_CG label #E8E34A
+B18_09_CG label #E8E34A
+B35_01_CG label #E8E34A
+B35_02_CG label #E8E34A
+B35_03_CG label #E8E34A
+B35_04_CG label #E8E34A
+B35_05_CG label #E8E34A
+B35_06_CG label #E8E34A
+B35_08_CG label #E8E34A
+B35_09_CG label #E8E34A
+B35_10_CG label #E8E34A
+B35_12_CG label #E8E34A
+B35_13_CG label #E8E34A
+B35_14_CG label #E8E34A
+B35_15_CG label #E8E34A
+B35_16_CG label #E8E34A
+B35_17_CG label #E8E34A
+B35_18_CG label #E8E34A
+B35_19_CG label #E8E34A
+B35_20_CG label #E8E34A
+B35_21_CG label #E8E34A
+B35_23_CG label #E8E34A
+B35_24_CG label #E8E34A
+B35_25_CG label #E8E34A
+B35_27_CG label #E8E34A
+B35_28_CG label #E8E34A
+B35_29_CG label #E8E34A
+B35_32_CG label #E8E34A
+B35_36_CG label #E8E34A
+B35_43_CG label #E8E34A
+B35_44_CG label #E8E34A
+B35_61_CG label #E8E34A
+B35_68_CG label #E8E34A
+B35_77_CG label #E8E34A
+B39_01_CG label #E8E34A
+B39_03_CG label #E8E34A
+B39_04_CG label #E8E34A
+B39_05_CG label #E8E34A
+B39_06_CG label #E8E34A
+B39_07_CG label #E8E34A
+B39_08_CG label #E8E34A
+B39_09_CG label #E8E34A
+B39_10_CG label #E8E34A
+B39_11_CG label #E8E34A
+B39_12_CG label #E8E34A
+B39_54_CG label #E8E34A
+B40_01_CG label #E8E34A
+B40_02_CG label #E8E34A
+B40_03_CG label #E8E34A
+B40_04_CG label #E8E34A
+B40_05_CG label #E8E34A
+B40_06_CG label #E8E34A
+B40_08_CG label #E8E34A
+B40_09_CG label #E8E34A
+B40_10_CG label #E8E34A
+B40_11_CG label #E8E34A
+B40_12_CG label #E8E34A
+B40_121_CG label #E8E34A
+B40_14_CG label #E8E34A
+B40_15_CG label #E8E34A
+B40_16_CG label #E8E34A
+B40_23_CG label #E8E34A
+B40_268_CG label #E8E34A
+B40_36_CG label #E8E34A
+B40_38_CG label #E8E34A
+B40_46_CG label #E8E34A
+B40_49_CG label #E8E34A
+B41_01_CG label #E8E34A
+B41_02_CG label #E8E34A
+B41_03_CG label #E8E34A
+B41_23_CG label #E8E34A
+B42_01_CG label #E8E34A
+B42_02_CG label #E8E34A
+B42_18_CG label #E8E34A
+B44_09_CG label #E8E34A
+B45_01_CG label #E8E34A
+B47_01_CG label #E8E34A
+B47_03_CG label #E8E34A
+B48_01_CG label #E8E34A
+B48_02_CG label #E8E34A
+B48_03_CG label #E8E34A
+B48_04_CG label #E8E34A
+B48_07_CG label #E8E34A
+B50_02_CG label #E8E34A
+B50_04_CG label #E8E34A
+B53_03_CG label #E8E34A
+B54_01_CG label #E8E34A
+B54_18_CG label #E8E34A
+B55_01_CG label #E8E34A
+B55_02_CG label #E8E34A
+B55_03_CG label #E8E34A
+B55_04_CG label #E8E34A
+B55_15_CG label #E8E34A
+B56_01_CG label #E8E34A
+B56_02_CG label #E8E34A
+B56_04_CG label #E8E34A
+B56_05_CG label #E8E34A
+B56_43_CG label #E8E34A
+B67_01_CG label #E8E34A
+B78_01_CG label #E8E34A
+B81_01_CG label #E8E34A
+B82_01_CG label #E8E34A
+B82_02_CG label #E8E34A
+
+B08_01_CG label #93F24E
+B08_04_CG label #93F24E
+B08_05_CG label #93F24E
+
+B13_01_CG label #51DB6F
+B44_10_CG label #51DB6F
+
+B13_02_CG label #4EF2CE
+B13_04_CG label #4EF2CE
+
+B15_16_CG label #2FB0EB
+B15_17_CG label #2FB0EB
+B15_67_CG label #2FB0EB
+
+B27_04_CG label #3C80E8
+B27_08_CG label #3C80E8
+
+B38_01_CG label #433FF2
+B38_09_CG label #433FF2
+
+B44_02_CG label #8944DB
+B44_03_CG label #8944DB
+B44_04_CG label #8944DB
+B44_05_CG label #8944DB
+B44_07_CG label #8944DB
+B44_08_CG label #8944DB
+B44_151_CG label #8944DB
+B44_27_CG label #8944DB
+B44_29_CG label #8944DB
+
+B44_15_CG label #DD3FF2
+B49_01_CG label #DD3FF2
+
+B51_01_CG label #EB267B
+B51_02_CG label #EB267B
+B51_03_CG label #EB267B
+B51_04_CG label #EB267B
+B51_05_CG label #EB267B
+B51_06_CG label #EB267B
+B51_08_CG label #EB267B
+B51_10_CG label #EB267B
+B51_12_CG label #EB267B
+B51_14_CG label #EB267B
+B51_15_CG label #EB267B
+B51_19_CG label #EB267B
+B51_33_CG label #EB267B
+B51_61_CG label #EB267B
+B51_76_CG label #EB267B
+B52_01_CG label #EB267B
+B59_01_CG label #EB267B
+
+B53_01_CG label #E86C3F
+B53_05_CG label #E86C3F
+
+B57_01_CG label #F29A41
+B57_02_CG label #F29A41
+B57_03_CG label #F29A41
+B57_04_CG label #F29A41
+B57_05_CG label #F29A41
+B57_25_CG label #F29A41
+B58_01_CG label #F29A41
+B58_02_CG label #F29A41
+
+C01_02_CG label #DBAD47
+C01_06_CG label #DBAD47
+C01_44_CG label #DBAD47
+C01_57_CG label #DBAD47
+
+C02_02_CG label #F2D641
+C02_03_CG label #F2D641
+C02_09_CG label #F2D641
+C02_10_CG label #F2D641
+C03_02_CG label #F2D641
+C03_03_CG label #F2D641
+C03_04_CG label #F2D641
+C03_05_CG label #F2D641
+C03_06_CG label #F2D641
+C03_07_CG label #F2D641
+C03_09_CG label #F2D641
+C03_135_CG label #F2D641
+C03_16_CG label #F2D641
+C03_19_CG label #F2D641
+C04_06_CG label #F2D641
+C05_01_CG label #F2D641
+C05_09_CG label #F2D641
+C06_03_CG label #F2D641
+C08_01_CG label #F2D641
+C08_02_CG label #F2D641
+C08_03_CG label #F2D641
+C08_04_CG label #F2D641
+C08_06_CG label #F2D641
+C08_13_CG label #F2D641
+C08_72_CG label #F2D641
+C12_02_CG label #F2D641
+C12_03_CG label #F2D641
+C12_04_CG label #F2D641
+C12_05_CG label #F2D641
+C12_07_CG label #F2D641
+C15_02_CG label #F2D641
+C15_03_CG label #F2D641
+C15_04_CG label #F2D641
+C15_05_CG label #F2D641
+C15_07_CG label #F2D641
+C15_08_CG label #F2D641
+C15_09_CG label #F2D641
+C15_10_CG label #F2D641
+C15_13_CG label #F2D641
+C16_01_CG label #F2D641
+C16_02_CG label #F2D641
+C16_04_CG label #F2D641
+C17_01_CG label #F2D641
+C17_03_CG label #F2D641
+
+C04_01_CG label #EAEB28
+C04_04_CG label #EAEB28
+C04_10_CG label #EAEB28
+C04_15_CG label #EAEB28
+
+C04_07_CG label #9EEB3F
+C18_01_CG label #9EEB3F
+C18_02_CG label #9EEB3F
+
+C06_02_CG label #50F250
+C06_04_CG label #50F250
+C06_06_CG label #50F250
+
+C07_01_CG label #54DB91
+C07_02_CG label #54DB91
+C07_03_CG label #54DB91
+C07_05_CG label #54DB91
+C07_07_CG label #54DB91
+C07_08_CG label #54DB91
+C07_10_CG label #54DB91
+C07_17_CG label #54DB91
+C07_172_CG label #54DB91
+C07_18_CG label #54DB91
+C07_19_CG label #54DB91
+C07_26_CG label #54DB91
+C07_27_CG label #54DB91
+C07_270_CG label #54DB91
+
+C07_04_CG label #50F2E2
+C07_06_CG label #50F2E2
+C07_14_CG label #50F2E2
+C07_248_CG label #50F2E2
+
+C14_02_CG label #36B0EB
+C14_03_CG label #36B0EB
+C14_06_CG label #36B0EB

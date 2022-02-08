@@ -12,13 +12,12 @@ import pandas as pd
 
 class Calculator():
 
-    def __init__(self, DATDir, AlleleListFile, OutCSV, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
+    def __init__(self, DATDir, AlleleListFile, depth_cut=0, ContactResi:list=None, ResiWeight:dict=None) -> None:
         
         # # fixed parameters
         # self.l = 10 # charge param
         # self.sigma = 10 # shape param
         # self.d = 0.5 # depth param
-        self.OutCSV = OutCSV
         self.DATDir = DATDir
 
         self.ContactResi = ContactResi
@@ -227,9 +226,9 @@ class Calculator():
 
         return
 
-    def SaveDist(self):
+    def SaveDist(self, OutCSV):
         
-        self.DistMat.to_csv(self.OutCSV)
+        self.DistMat.to_csv(OutCSV)
         
         return
 

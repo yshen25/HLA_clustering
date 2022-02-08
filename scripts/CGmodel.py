@@ -62,7 +62,7 @@ class CGCalculator():
     """
     Calculate distance between CG models
     """
-    def __init__(self, CG_DATDir, AlleleListFile, OutCSV, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
+    def __init__(self, CG_DATDir, AlleleListFile, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
         
         # first, check if pairwise mode seeting is correct
         # number of residues between two molecules must be the same
@@ -71,7 +71,6 @@ class CGCalculator():
                 raise ValueError("Must specify contact residues to enable pairwise mode!!")
         self.pairwise = Pairwise # controls pairwise matrices or all-to-all matrices
         
-        self.OutCSV = OutCSV
         self.DATDir = CG_DATDir
         self.AASimDict = AASim
 
@@ -238,9 +237,9 @@ class CGCalculator():
 
         return
 
-    def SaveDist(self):
+    def SaveDist(self, OutCSV):
         
-        self.DistMat.to_csv(self.OutCSV)
+        self.DistMat.to_csv(OutCSV)
         
         return
 
