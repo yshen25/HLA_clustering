@@ -3,7 +3,7 @@ from pyexpat import model
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 import pandas as pd
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import dendrogram, linkage, to_tree
 # from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -85,42 +85,6 @@ def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, MinSample=5):
 
     return result
 
-def plot_dendrogram(model, **kwargs):
-    # Create linkage matrix and then plot the dendrogram
-
-    # create the counts of samples under each node
-    counts = np.zeros(model.children_.shape[0])
-    # n_samples = len(model.labels_)
-    # for i, merge in enumerate(model.children_):
-    #     current_count = 0
-    #     for child_idx in merge:
-    #         if child_idx < n_samples:
-    #             current_count += 1  # leaf node
-    #         else:
-    #             current_count += counts[child_idx - n_samples]
-    #     counts[i] = current_count
-
-    linkage_matrix = np.column_stack([model.children_, model.distances_, counts]).astype(float)
-
-    # linkage_matrix = linkage()
-
-    # Plot the corresponding dendrogram
-    plt.figure(figsize=(80,10))
-    # fig, ax = plt.subplots(figsize=(80,10))
-    dendro = dendrogram(linkage_matrix, **kwargs, leaf_font_size=16, get_leaves=True)
-
-    plt.show()
-
-    return dendro['leaves']
-
-def hierarchical_cluster(Mat, N, L, threshold=None):
-    Mat = Mat.add(Mat.T, fill_value=0)
-    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold).fit(Mat)
-    result = pd.Series(model.labels_, index=Mat.index)
-    # plot_dendrogram(model, truncate_mode="level", p=3)
-    order = plot_dendrogram(model, truncate_mode=None, labels=Mat.index)
-    return result, order
-"""
 def getNewick(node, newick, parentdist, leaf_names):
     if node.is_leaf():
         return "%s:%.2f%s" % (leaf_names[node.id], parentdist - node.dist, newick)
@@ -134,6 +98,50 @@ def getNewick(node, newick, parentdist, leaf_names):
         newick = "(%s" % (newick)
         return newick
 
+def plot_dendrogram(model, truncate, labels, outtree=None):
+    # Create linkage matrix and then plot the dendrogram
+
+    # create the counts of samples under each node
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack([model.children_, model.distances_, counts]).astype(float)
+
+    # linkage_matrix = linkage(Mat, method='average')
+
+    # Plot the corresponding dendrogram
+    plt.figure(figsize=(80,10))
+    # fig, ax = plt.subplots(figsize=(80,10))
+    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=16, get_leaves=True)
+
+    plt.show()
+
+    if outtree:
+        tree = to_tree(linkage_matrix)
+        OutFile = getNewick(tree, "", tree.dist, labels)
+        with open(outtree, "w") as fh:
+            fh.write(OutFile)
+
+    return dendro['leaves']
+
+def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None):
+    Mat = Mat.add(Mat.T, fill_value=0)
+    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold).fit(Mat)
+    result = pd.Series(model.labels_, index=Mat.index)
+    # order = plot_dendrogram(model, truncate_mode="lastp", p=20)
+    order = plot_dendrogram(model, None, Mat.index, outtree)
+    return result, order
+
+
+"""
 def dendro(Mat, OutTreeFile):
     # Mat = pd.read_csv(InCSV, index_col=0)
     Mat = Mat.add(Mat.T, fill_value=0)
@@ -175,7 +183,7 @@ def Matrix2Dendro(Mat, OutTreeFile=None, label=None):
     
     return
 
-def MSAMat(InFile, scale=0.01):
+def MSAMat(InFile, scale=1):
     allele_dict = SeqIO.to_dict(SeqIO.parse(InFile, "fasta"))
 
     # AlleleComb_wi = combinations_with_replacement(DATList, 2)
