@@ -427,18 +427,20 @@ if __name__ == "__main__":
     # PDB_preprocess("../HLAA_relax/PDB", "1i4f_Crown.pdb", "../HLAA_relax/TRIM", "../HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
     # PDB_preprocess("../HLAB_relax/PDB", "1i4f_Crown.pdb", "../HLAB_relax/TRIM", "../HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
 
-    PDB_preprocess("../ext_model/PDB", "1i4f_Crown.pdb", "../ext_model/TRIM", "../ext_model/ALIGN", "ext_relax_trim.csv")
-    PDB_to_csv("../ext_model/ALIGN", "../ext_model/DAT")
-    FullAtom_to_CG("../ext_model/DAT", "../ext_model/CG_DAT")
+    # PDB_preprocess("../ext_model/PDB", "1i4f_Crown.pdb", "../ext_model/TRIM", "../ext_model/ALIGN", "ext_relax_trim.csv")
+    # PDB_to_csv("../ext_model/ALIGN", "../ext_model/DAT")
+    # FullAtom_to_CG("../ext_model/DAT", "../ext_model/CG_DAT")
     # PDB_to_csv("../HLAB_relax/ALIGN", "../HLAB_relax/DAT")
 
     # FullAtom_to_CG("../HLAA_relax/DAT", "../HLAA_relax/CG_DAT")
     # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
     ## ====crystal====
+    PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
     # for allele in ["A0201"]:
+    # for allele in ["C01_02", "C03_04", "C04_01", "C05_01", "C06_02", "C08_01", "C15_10", "C16_04"]:
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
 
