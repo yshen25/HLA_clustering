@@ -98,7 +98,7 @@ def getNewick(node, newick, parentdist, leaf_names):
         newick = "(%s" % (newick)
         return newick
 
-def plot_dendrogram(model, truncate, labels, outtree=None):
+def plot_dendrogram(model, truncate, labels, threshold, outtree=None):
     # Create linkage matrix and then plot the dendrogram
 
     # create the counts of samples under each node
@@ -120,7 +120,7 @@ def plot_dendrogram(model, truncate, labels, outtree=None):
     # Plot the corresponding dendrogram
     plt.figure(figsize=(80,10))
     # fig, ax = plt.subplots(figsize=(80,10))
-    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=16, get_leaves=True)
+    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=16, get_leaves=True, color_threshold=threshold)
 
     plt.show()
 
@@ -136,8 +136,7 @@ def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None):
     Mat = Mat.add(Mat.T, fill_value=0)
     model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold).fit(Mat)
     result = pd.Series(model.labels_, index=Mat.index)
-    # order = plot_dendrogram(model, truncate_mode="lastp", p=20)
-    order = plot_dendrogram(model, None, Mat.index, outtree)
+    order = plot_dendrogram(model, None, Mat.index, threshold, outtree)
     return result, order
 
 

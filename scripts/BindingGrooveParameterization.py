@@ -436,19 +436,18 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
     ## ====crystal====
-    PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
+    # PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
     # for allele in ["A0101", "A0201", "A3003", "A3001", "A0203", "A0206", "A0207", "A0301", "A1101", "A6801", "A2301", "A2402"]:
     # for allele in ["B0702","B3501","B4201","B5101","B5301","B0801","B1402","B2703","B2704","B2705","B2706","B2709","B3901","B1801","B3701","B4001","B4002","B4402","B4403","B5701","B5801","B1501","B4601"]:
     # for allele in ["A0201"]:
     # for allele in ["C01_02", "C03_04", "C04_01", "C05_01", "C06_02", "C08_01", "C15_10", "C16_04"]:
+    # for allele in ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01","B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01","B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]:
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
-        # PDB_preprocess(f"../crystal/{allele}/pdb_A", "1i4f_Crown.pdb", f"../crystal/{allele}/TRIM", f"../crystal/{allele}/ALIGN", f"{allele}_trim.csv")
+        # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
 
-    # PDB_to_csv("../crystal/A_mean/pdb", "../crystal/A_mean/DAT")
-    # PDB_to_csv("../crystal/B_mean/pdb", "../crystal/B_mean/DAT")
+    PDB_to_csv("../crystal/CONFIRM/mean_crystal/PDB", "../crystal/CONFIRM/mean_crystal/DAT")
 
-    # FullAtom_to_CG("../crystal/A_mean/DAT", "../crystal/A_mean/CG_DAT")
-    # FullAtom_to_CG("../crystal/B_mean/DAT", "../crystal/B_mean/CG_DAT")
+    FullAtom_to_CG("../crystal/CONFIRM/mean_crystal/DAT", "../crystal/CONFIRM/mean_crystal/CG_DAT")
     
     ## ====homology models====
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
