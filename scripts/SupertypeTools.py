@@ -3,7 +3,7 @@ from pyexpat import model
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 import pandas as pd
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram, linkage, to_tree
+from scipy.cluster.hierarchy import dendrogram, to_tree
 # from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -132,11 +132,21 @@ def plot_dendrogram(model, truncate, labels, threshold, outtree=None):
 
     return dendro['leaves']
 
-def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None):
+def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None, plot_dendro=False, give_distances=False):
     Mat = Mat.add(Mat.T, fill_value=0)
-    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold).fit(Mat)
+    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True).fit(Mat)
     result = pd.Series(model.labels_, index=Mat.index)
-    order = plot_dendrogram(model, None, Mat.index, threshold, outtree)
+
+    order = None
+    
+    if plot_dendro:
+        order = plot_dendrogram(model, None, Mat.index, threshold, outtree)
+
+    if give_distances:
+        dist = model.distances_
+
+        return result, dist
+
     return result, order
 
 
@@ -198,6 +208,18 @@ def MSAMat(InFile, scale=1):
         DistMat.loc[comb[1],comb[0]] = np.reciprocal(aligner.score(allele_dict[comb[1]].seq, allele_dict[comb[0]].seq)*scale)
 
     return DistMat
+
+def SSE(mat, groups:list):
+    # mat = pd.read_csv(MatrixCSV, index_col=0)
+
+    sum_SSE = 0
+
+    for group in groups:
+        # print(group)
+        group_square = mat.loc[group,group]
+        sum_SSE += group_square.values.sum()
+    
+    return sum_SSE
 
 def StatDist(Mat, loci):
     Mat = Mat.to_numpy()
