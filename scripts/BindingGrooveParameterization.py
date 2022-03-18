@@ -445,9 +445,9 @@ if __name__ == "__main__":
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
 
-    PDB_to_csv("../Figures/Figure2_clustering_cr_hm/cr/PDB", "../Figures/Figure2_clustering_cr_hm/cr/DAT")
+    PDB_to_csv("../Figures/Figure2_clustering_cr_hm/PDB", "../Figures/Figure2_clustering_cr_hm/DAT")
 
-    FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/cr/DAT", "../Figures/Figure2_clustering_cr_hm/cr/CG_DAT")
+    FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/DAT", "../Figures/Figure2_clustering_cr_hm/CG_DAT")
     
     ## ====homology models====
     # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
