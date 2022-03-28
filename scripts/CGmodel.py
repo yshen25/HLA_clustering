@@ -25,7 +25,7 @@ def CenterOfMass(DATFile, OutFile):
     #     OutFile = DATFile.split(".")[0] + "_CG.csv"
 
     DAT = pd.read_csv(DATFile)
-    DAT = DAT[~DAT.Atom.isin(["N", "CA", "C", "O"])] # filter out backbone atoms
+    # DAT = DAT[~DAT.Atom.isin(["N", "CA", "C", "O"])] # filter out backbone atoms
     ResGen = DAT.groupby(by='ResNum')
 
     CG_list = []
@@ -39,6 +39,9 @@ def CenterOfMass(DATFile, OutFile):
 
         for atom in resatoms_df[["Atom", "X", "Y", "Z"]].to_numpy():
             # print(atom)
+            if atom[0] in ["N", "CA", "C", "O"]:
+                continue # filter out backbone atoms
+
             if not atom[0][0].isdigit():
                 mass = AtomicMass[atom[0][0]] # real atom name is the first letter of pdb atom name
 
@@ -50,8 +53,10 @@ def CenterOfMass(DATFile, OutFile):
             y += mass * atom[2]
             z += mass * atom[3]
 
-
-        CG_list.append([resnum, resname, x/total_mass, y/total_mass, z/total_mass])
+        if total_mass == 0:
+            CG_list.append([resnum, resname, np.nan, np.nan, np.nan])
+        else:
+            CG_list.append([resnum, resname, x/total_mass, y/total_mass, z/total_mass])
 
     CG_DAT = pd.DataFrame(CG_list, columns=["ResNum", "Residue", "X", "Y", "Z"])
     CG_DAT.to_csv(OutFile, index=False)
@@ -249,8 +254,9 @@ def CG_RMSD(InDAT, RefDAT):
     """
     in_df = pd.read_csv(InDAT)
     ref_df = pd.read_csv(RefDAT)
-    in_coord = in_df[['X', 'Y', 'Z']].values
-    ref_coord = ref_df[['X', 'Y', 'Z']].values
+    non_missing_res = in_df['X'].notna() # filter out residues missing side chain
+    in_coord = in_df.loc[non_missing_res,['X', 'Y', 'Z']].values
+    ref_coord = ref_df.loc[non_missing_res,['X', 'Y', 'Z']].values
 
     RMSD = np.sqrt(np.linalg.norm(in_coord-ref_coord)/len(in_df))
     return RMSD
