@@ -39,7 +39,7 @@ def CGCalcMat(DATDir, AlleleListFile, contact, weight, pairwise=False):
     return calc.DistMat
 
 # ==== universal tools ====
-def heatmap(Mat, order=None, size=(10,10), label=False, line=False, **cbar_kw):
+def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
     # Mat = pd.read_csv(InCSV, index_col=0)
     Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
@@ -57,7 +57,7 @@ def heatmap(Mat, order=None, size=(10,10), label=False, line=False, **cbar_kw):
     plt.figure(figsize=size)
     
     g = sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True, cbar_kws=cbar_kw)
-    g.axes.tick_params(axis='both', labelsize=8, pad=45)
+    g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
     if label:
         g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
         g.axes.set_yticklabels(labels=label,va='center',ha='left')
