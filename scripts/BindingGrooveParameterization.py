@@ -134,30 +134,31 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
     aligner.gap_score = -10 # no gap wanted
 
     for InPDB in os.listdir(InDir):
-        print("trim:", InPDB)
-        InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
-        InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
-        
-        starting_loc = InStruct[0]["A"].child_list[0]._id[1] # index of the first residue
-        alignments = aligner.align(InSeq, TSeq)
+        if InPDB.endswith(".pdb"):
+            print("trim:", InPDB)
+            InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
+            InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
+            
+            starting_loc = InStruct[0]["A"].child_list[0]._id[1] # index of the first residue
+            alignments = aligner.align(InSeq, TSeq)
 
-        ## === archive === stand-alone trim
-        # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
-        # qend = qstart + 178 # fixed length
-        #qend = alignments[0].aligned[0][-1][-1] # aligned portion
-        # use 177 to remove last amino acid of relaxed models
-        
-        ## === use with PDB_renumber ===
-        qstart = starting_loc - alignments[0].aligned[0][0][0] + 1 # starting loc should be 2
-        qend = 179
+            ## === archive === stand-alone trim
+            # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
+            # qend = qstart + 178 # fixed length
+            #qend = alignments[0].aligned[0][-1][-1] # aligned portion
+            # use 177 to remove last amino acid of relaxed models
+            
+            ## === use with PDB_renumber ===
+            qstart = starting_loc - alignments[0].aligned[0][0][0] + 1 # starting loc should be 2
+            qend = 179
 
-        # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
-        OutPDB = InPDB
+            # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
+            OutPDB = InPDB
 
-        InStruct = PDB_renumber(InStruct, qstart)
-        extract(InStruct, chain, 2, qend, f"{OutDir}/{OutPDB}")
-        #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
-        record.append([OutPDB, qstart, qend, qend-qstart+1])
+            InStruct = PDB_renumber(InStruct, qstart)
+            extract(InStruct, chain, 2, qend, f"{OutDir}/{OutPDB}")
+            #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
+            record.append([OutPDB, qstart, qend, qend-qstart+1])
 
     # df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
     # df.to_csv(OutCSV)
@@ -436,30 +437,22 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../HLAA_relax/DAT", "../HLAA_relax/CG_DAT")
     # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
+    ## ====validation====
+    PDB_preprocess("../AF2/PDB", "1i4f_Crown.pdb", "../AF2/TRIM", "../AF2/ALIGN", "AF2_trim.csv")
+    PDB_to_csv("../AF2/ALIGN", "../AF2/DAT")
+    FullAtom_to_CG("../AF2/DAT", "../AF2/CG_DAT")
+
     ## ====crystal====
-    cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
-    "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
-    "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
+    # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
+    # "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
+    # "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
     # PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
     # for allele in ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01","B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01","B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]:
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
-    for allele in cr_list:
+    # for allele in cr_list:
         # PDB_to_csv(f"../crystal/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
-        FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
-    
-    ## ====homology models====
-    # PDB_preprocess("../HLAA_pdbs", "1i4f_Crown.pdb", "../HLAA_Trimmed", "../HLAA_Aligned", "../HLAA_trim.csv")
-    # PDB_preprocess("../HLAB_pdbs", "1i4f_Crown.pdb", "../HLAB_Trimmed", "../HLAB_Aligned", "../HLAB_trim.csv")
-    # PDB_to_csv("../HLAA_Aligned", "../HLAA_DAT")
-    # PDB_to_csv("../HLAB_Aligned", "../HLAB_DAT")
-    # CP_template("../HLAA_relax/DAT", "../HLAA_reference_panel/DAT", "../HLAA_relax/ALIGN", "../HLAA_reference_panel/ALIGN")
-    # CP_template("../HLAB_relax/DAT", "../HLAB_reference_panel/DAT", "../HLAB_relax/ALIGN", "../HLAB_reference_panel/ALIGN")
-    # CreateRecord("HLAA_DAT", "HLAA_rec.csv")
-    # CreateRecord("HLAB_DAT", "HLAB_rec.csv")
-
-    # FullAtom_to_CG("../HLAA_DAT", "../HLAA_CG_DAT")
-    # FullAtom_to_CG("../HLAB_DAT", "../HLAB_CG_DAT")
+        # FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
 
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
