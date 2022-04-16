@@ -438,9 +438,9 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
     ## ====validation====
-    PDB_preprocess("../AF2/PDB", "1i4f_Crown.pdb", "../AF2/TRIM", "../AF2/ALIGN", "AF2_trim.csv")
-    PDB_to_csv("../AF2/ALIGN", "../AF2/DAT")
-    FullAtom_to_CG("../AF2/DAT", "../AF2/CG_DAT")
+    PDB_preprocess("../temp/PDB", "1i4f_Crown.pdb", "../temp/TRIM", "../temp/ALIGN", "temp_trim.csv")
+    PDB_to_csv("../temp/ALIGN", "../temp/DAT")
+    FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
 
     ## ====crystal====
     # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
