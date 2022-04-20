@@ -1,5 +1,4 @@
 # from turtle import right
-from pyexpat import model
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 import pandas as pd
 import numpy as np
@@ -39,9 +38,10 @@ def CGCalcMat(DATDir, AlleleListFile, contact, weight, pairwise=False):
     return calc.DistMat
 
 # ==== universal tools ====
-def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
+def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
     # Mat = pd.read_csv(InCSV, index_col=0)
-    Mat = Mat.add(Mat.T, fill_value=0)
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
 
     if order:
@@ -76,9 +76,10 @@ def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8,
     plt.show()
     return
 
-def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, MinSample=5):
+def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, square=False, MinSample=5):
     # Mat = pd.read_csv(InCSV, index_col=0)
-    Mat = Mat.add(Mat.T, fill_value=0)
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     clustering = DBSCAN(eps=epsilon, min_samples=MinSample, metric="precomputed", n_jobs=-1).fit(Mat)
     labels = clustering.labels_
     result = pd.Series(labels, index=Mat.index)
@@ -132,8 +133,9 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
 
     return dendro['leaves']
 
-def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None, plot_dendro=False, give_distances=False, color_threshold=None):
-    Mat = Mat.add(Mat.T, fill_value=0)
+def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, give_distances=False, color_threshold=None):
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True).fit(Mat)
     result = pd.Series(model.labels_, index=Mat.index)
 
@@ -169,8 +171,10 @@ def dendro(Mat, OutTreeFile):
     return
 """
 
-def Matrix2Dendro(Mat, OutTreeFile=None, label=None):
-    Mat = Mat.add(Mat.T, fill_value=0)
+def Matrix2Dendro(Mat, square=False, OutTreeFile=None, label=None):
+        
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     
     # if label:
     #     Mat = pd.DataFrame(Mat.values, index=label, columns=label)
