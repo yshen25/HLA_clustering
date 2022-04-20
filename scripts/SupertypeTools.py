@@ -133,7 +133,7 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
 
     return dendro['leaves']
 
-def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, give_distances=False, color_threshold=None):
+def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, centroid=False, color_threshold=None):
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True).fit(Mat)
@@ -144,12 +144,18 @@ def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None
     if plot_dendro:
         order = plot_dendrogram(model, None, Mat.index, color_threshold, outtree)
 
-    if give_distances:
-        dist = model.distances_
+    if centroid:
+        centers = []
+        for i in result.groupby(by=result):
+            group = i[1].index.to_numpy()
+            centers.append(Mat.loc[group,group].sum(axis=0).idxmin())
 
-        return result, dist
+        return result, order, pd.Series(centers)
 
     return result, order
+
+def robust_cluster():
+    return
 
 
 """
