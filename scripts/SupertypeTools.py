@@ -29,9 +29,14 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
     return calc.DistMat
 
 # ==== coarse grain tools ====
-def CGCalcMat(DATDir, AlleleListFile, contact, weight, pairwise=False):
+def CGCalcMat(DATDir, AlleleListFile, contact, weight, sigma=None, w=None, pairwise=False):
 
     calc = CGCalculator(DATDir ,AlleleListFile, ContactResi=contact, ResiWeight=weight, Pairwise=pairwise)
+    if sigma:
+        calc.sigma = sigma
+
+    if w:
+        calc.w = w
 
     calc.CalcDist()
 
@@ -39,7 +44,7 @@ def CGCalcMat(DATDir, AlleleListFile, contact, weight, pairwise=False):
 
 # ==== universal tools ====
 def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
-    # Mat = pd.read_csv(InCSV, index_col=0)
+
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
@@ -121,7 +126,7 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
     # Plot the corresponding dendrogram
     plt.figure(figsize=(80,10))
     # fig, ax = plt.subplots(figsize=(80,10))
-    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=16, get_leaves=True, color_threshold=color_threshold)
+    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=12, get_leaves=True, color_threshold=color_threshold)
 
     plt.show()
 
@@ -150,7 +155,7 @@ def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None
             group = i[1].index.to_numpy()
             centers.append(Mat.loc[group,group].sum(axis=0).idxmin())
 
-        return result, order, pd.Series(centers)
+        return result, order, pd.Series(range(len(centers)), index=centers)
 
     return result, order
 

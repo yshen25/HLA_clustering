@@ -68,7 +68,10 @@ class CGCalculator():
     Calculate distance between CG models
     """
     def __init__(self, CG_DATDir, AlleleListFile, ContactResi:list=None, ResiWeight:dict=None, Pairwise:bool=False) -> None:
-        
+        # shape parameter
+        self.sigma = 0.5
+        self.w = 1
+
         # first, check if pairwise mode seeting is correct
         # number of residues between two molecules must be the same
         if Pairwise:
@@ -136,7 +139,7 @@ class CGCalculator():
             SimScore = np.sum(np.linalg.norm(CoordA - CoordB, ord=2, axis=1) * ResiPairSim_score * np.multiply(WeightA, WeightB))
 
         else:
-            SimScore = np.sum( np.reciprocal(np.cosh(0.5*cdist(CoordA, CoordB, "euclidean"))) * ResiPairSim_score * np.outer(WeightA, WeightB) )
+            SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.w * ResiPairSim_score * np.outer(WeightA, WeightB) )
 
         return SimScore
 
