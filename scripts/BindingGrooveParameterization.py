@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-parameterize the binding groove of MHC moleules to voxels
+extract coordinates of resi forming the binding groove of HLA moleules
 input: pdb file
 output: csv file
 """
