@@ -224,14 +224,14 @@ def MSAMat(InFile, scale=1):
 
     return DistMat
 
-def SSE(mat, groups:list):
+def SSE(mat:pd.DataFrame, groups:list):
     # mat = pd.read_csv(MatrixCSV, index_col=0)
-
+    # SSE divided by number of elements in each cluster
     sum_SSE = 0
 
     for group in groups:
         # print(group)
         group_square = mat.loc[group,group]
-        sum_SSE += group_square.values.sum()
+        sum_SSE += group_square.values.sum()/group_square.shape[0]
     
     return sum_SSE

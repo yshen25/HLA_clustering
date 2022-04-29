@@ -139,6 +139,9 @@ class CGCalculator():
             SimScore = np.sum(np.linalg.norm(CoordA - CoordB, ord=2, axis=1) * ResiPairSim_score * np.multiply(WeightA, WeightB))
 
         else:
+            # distance metrics
+            # old:
+            # SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.w * ResiPairSim_score * np.outer(WeightA, WeightB) )
             SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.w * ResiPairSim_score * np.outer(WeightA, WeightB) )
 
         return SimScore
