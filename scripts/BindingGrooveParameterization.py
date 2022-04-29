@@ -59,20 +59,21 @@ class ChainSelector:
 
     def accept_chain(self, chain):
         """Verify if chain match chain identifier."""
-        if chain.get_id() == self.chain_id:
+        if chain.get_id() in self.chain_id:
             return 1
         return 0
 
     def accept_residue(self, residue):
         """Verify if a residue sequence is between the start and end sequence."""
         # residue - between start and end
-        hetatm_flag, resseq, icode = residue.get_id()
+        hetatm_flag, loc, icode = residue.get_id()
+        chain_ = residue.parent.get_id()
         if hetatm_flag != " ":
             # skip HETATMS
             return 0
         if icode != " ":
-            print(f"WARNING: Icode {icode} at position {resseq}")
-        if self.start <= resseq <= self.end:
+            print(f"WARNING: Icode {icode} at position {loc}")
+        if self.start[self.chain_id.index(chain_)] <= loc <= self.end[self.chain_id.index(chain_)]:
             return 1
         return 0
 
@@ -100,35 +101,40 @@ def extract(structure, chain_id, start, end, filename):
 
     return
 
-def PDB_renumber(struct, start:int):
+def PDB_renumber(struct, start:list):
     """
-    For mono-chain pdb file only
-    renumber pdb files
+    renumber pdb files, the first residue in pdb file is indexed as start number
+    each chain is given a start number in alphabat order
     """
+    for i, chain in enumerate(struct[0]):
     #loop 1: renumber residues to negative number to avoid errors
-    residue_id = -1
-    for residue in struct.get_residues():
-        residue.id=(' ',residue_id,' ')
-        residue_id -= 1
-    #loop 2
-    residue_id = start
-    for residue in struct.get_residues():
-        #print(chain.get_id(), residue_id)
-        residue.id=(' ',residue_id,' ')
-        residue_id += 1
+        residue_id = -1
+        for residue in chain.get_residues():
+            residue.id=(' ',residue_id,' ')
+            residue_id -= 1
+        #loop 2
+        residue_id = start[i]
+        for residue in chain.get_residues():
+            #print(chain.get_id(), residue_id)
+            residue.id=(' ',residue_id,' ')
+            residue_id += 1
     return struct
 
-def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
+def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A", length=[179], template_start_id=[2]):
     """
     PDB structure trim to have same length with tamplate
     """
+    # length=[179] # HLA1
+    # start_id=[2] # HLA1
+    # length = [80, 85] # HLA2
+    # template_start_id = [4,7] # HLA2
     record = []
 
     PepBuilder = PPBuilder()
     parser = PDBParser(PERMISSIVE=1)
 
     TStruct = parser.get_structure("template", TemplatePDB)
-    TSeq = PepBuilder.build_peptides(TStruct)[0].get_sequence()
+    TSeqs = PepBuilder.build_peptides(TStruct)
     
     aligner = PairwiseAligner()
     aligner.gap_score = -10 # no gap wanted
@@ -137,10 +143,15 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
         if InPDB.endswith(".pdb"):
             print("trim:", InPDB)
             InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
-            InSeq = PepBuilder.build_peptides(InStruct)[0].get_sequence()
+            Seqs = PepBuilder.build_peptides(InStruct[0])
+            qends = []
+            qstarts = []
+            for i, chain_identifier in enumerate(chain):
+                InSeq = Seqs[i].get_sequence()
+                TSeq = TSeqs[i].get_sequence()
             
-            starting_loc = InStruct[0]["A"].child_list[0]._id[1] # index of the first residue
-            alignments = aligner.align(InSeq, TSeq)
+                starting_loc = InStruct[0][chain_identifier].child_list[0]._id[1] # index of the first residue
+                alignments = aligner.align(InSeq, TSeq)
 
             ## === archive === stand-alone trim
             # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
@@ -149,19 +160,28 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A"):
             # use 177 to remove last amino acid of relaxed models
             
             ## === use with PDB_renumber ===
-            qstart = starting_loc - alignments[0].aligned[0][0][0] + 1 # starting loc should be 2
-            qend = 179
+                # qstart = starting_loc - alignments[0].aligned[0][0][0] + template_start_id[i] -1
+                qstart = starting_loc + alignments[0].aligned[1][0][0] - alignments[0].aligned[0][0][0] + template_start_id[i] -1
+                # starting loc is calibarated, for the 1st residue in template is not loc 1
+                qend = length[i]
+
+                qstarts.append(qstart)
+                qends.append(qend)
+                
+                record.append([InPDB, chain_identifier, qstart, qend, qend-qstart+1])
 
             # OutPDB = InPDB.split("S")[0].replace("*", "").replace(":", "_") + ".pdb"
             OutPDB = InPDB
 
-            InStruct = PDB_renumber(InStruct, qstart)
-            extract(InStruct, chain, 2, qend, f"{OutDir}/{OutPDB}")
+            # InStruct = PDB_renumber(InStruct, qstart)
+            # extract(InStruct, chain, start_id, qends, f"{OutDir}/{OutPDB}") # HLA1
+            InStruct = PDB_renumber(InStruct, qstarts)
+            extract(InStruct, chain, [2,2], qends, f"{OutDir}/{OutPDB}")
             #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
-            record.append([OutPDB, qstart, qend, qend-qstart+1])
+            
 
-    # df = pd.DataFrame(record, columns=["FileName", "qstart", "qend", "length"])
-    # df.to_csv(OutCSV)
+    df = pd.DataFrame(record, columns=["FileName", "chain", "qstart", "qend", "length"])
+    df.to_csv(OutCSV)
 
     return
 
@@ -299,35 +319,43 @@ def PDB_to_csv(InDir, OutDir):
             TStruct = parser.get_structure("struct", f"{InDir}/{InPDB}")[0]
             # i = 0 # used to record aa position
             # pep_len = len(TStruct['A'])
-            for residue in TStruct['A']:
-                # i += 1
-                # if i >= pep_len: # if the last one
-                #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
-                ResName = residue.resname
-                ResNum = residue.id[1]
-                
-                if ResName == "HIS": # distinguish three protonation states of histidine
+            for chain in TStruct:
+                for residue in chain:
+                    # i += 1
+                    # if i >= pep_len: # if the last one
+                    #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
+                    ResName = residue.resname
+                    ResNum = residue.id[1]
                     
-                    if residue.has_id("HE2"):
+                    if ResName == "HIS": # distinguish three protonation states of histidine
                         
-                        if residue.has_id("HD1"):
-                            ResName2 = "HIP" # H on both epsilon and delta N
+                        if residue.has_id("HE2"):
+                            
+                            if residue.has_id("HD1"):
+                                ResName2 = "HIP" # H on both epsilon and delta N
+                            else:
+                                ResName2 = "HIE" # H on epsilon N only
+
                         else:
-                            ResName2 = "HIE" # H on epsilon N only
+                            ResName2 = "HID" # H on delta N only. By default HIS is HID
 
+                    elif ResName == "MSE": # no partial charge value for MSE
+                        ResName = ResName2 = "MET"
+                    
                     else:
-                        ResName2 = "HID" # H on delta N only. By default HIS is HID
-                else:
-                    ResName2 = ResName
-                
-                for atom in residue:
-                    # Rosetta relax will automaticly change last Oxigen from O to OXT
-                    if atom.name == "OXT":
-                        atom.name = "O"
+                        ResName2 = ResName
+                    
+                    for atom in residue:
+                        # Rosetta relax will automaticly change last Oxigen from O to OXT
+                        if atom.name == "OXT":
+                            atom.name = "O"
+                        # change Se in MSE to S
+                        elif atom.name == "SE":
+                            atom.name = "SD"
 
-                    X_coord, Y_coord, Z_coord = atom.coord[0:3]
-                    OutList.append([ResName, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
-                    , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)]])
+                        X_coord, Y_coord, Z_coord = atom.coord[0:3]
+                        OutList.append([ResName, chain.id, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
+                        , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)]])
 
             OutList = np.array(OutList)
             # ResiDepth = resi_depth(TStruct, OutList[:,4:7], pep)
@@ -341,7 +369,7 @@ def PDB_to_csv(InDir, OutDir):
             # OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "InGroove"])
 
             # OutList = np.hstack((OutList, ResiDepth, InGroove))
-            OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity"])
+            OutDF = pd.DataFrame(OutList, columns=["Residue", "Chain", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity"])
 
             OutDF.to_csv(f"{OutDir}/{InPDB.split('.')[0] + '.csv'}", index=False)
             # sys.exit()
@@ -395,7 +423,7 @@ def CreateRecord(DATDir, RecFile):
 
     return
 
-def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV):
+def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV, **kwargs):
 
     if not os.path.exists(TrimDir):
         os.makedirs(TrimDir)
@@ -403,7 +431,7 @@ def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV):
     if not os.path.exists(AlignDir):
         os.makedirs(AlignDir)
 
-    PDB_trim(PDBDIr, TemplatePDB, TrimDir, OutCSV)
+    PDB_trim(PDBDIr, TemplatePDB, TrimDir, OutCSV, **kwargs)
     PDB_align(TrimDir, TemplatePDB, AlignDir)
 
     return
@@ -438,9 +466,9 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
 
     ## ====validation====
-    PDB_preprocess("../temp/PDB", "1i4f_Crown.pdb", "../temp/TRIM", "../temp/ALIGN", "temp_trim.csv")
-    PDB_to_csv("../temp/ALIGN", "../temp/DAT")
-    FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
+    # PDB_preprocess("../temp/PDB", "1i4f_Crown.pdb", "../temp/TRIM", "../temp/ALIGN", "temp_trim.csv")
+    # PDB_to_csv("../temp/ALIGN", "../temp/DAT")
+    # FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
 
     ## ====crystal====
     # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
@@ -453,7 +481,7 @@ if __name__ == "__main__":
     # for allele in cr_list:
         # PDB_to_csv(f"../crystal/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
         # FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
-
+    
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
     # ext_list = ["A30_01", "A02_03", "A02_07", "B27_04", "B27_06", "B40_01", "B40_02", "B46_01"]
