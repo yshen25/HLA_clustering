@@ -235,3 +235,34 @@ def SSE(mat:pd.DataFrame, groups:list):
         sum_SSE += group_square.values.sum()/group_square.shape[0]
     
     return sum_SSE
+
+def Silhouette(Mat:pd.DataFrame, groups:list, square=False):
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
+    score = []
+    for group in groups:
+
+        if len(group) == 1:
+            # if only one element in a group, the silhouette score is 0 (arbitrary)
+            score.append(0)
+            continue
+
+        out_groups = groups[:]
+        out_groups.remove(group)
+
+        for allele in group:
+            
+            # distance within groups
+            ai = Mat.loc[group,allele].sum() / (len(group) - 1)
+            # distance to neighbor cluster
+            bi = np.min([Mat.loc[out_group,allele].sum() / len(out_group) for out_group in out_groups])
+
+            if ai <= bi:
+                score.append(1-ai/bi)
+
+            else:
+                score.append(bi/ai-1)
+
+        # print(score)
+
+    return np.mean(score)
