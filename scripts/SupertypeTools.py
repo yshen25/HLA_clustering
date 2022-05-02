@@ -44,7 +44,7 @@ def CGCalcMat(DATDir, AlleleListFile, contact, weight, sigma=None, w=None, pairw
 
 # ==== universal tools ====
 def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
-
+    sn.set(font_scale=2)
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
@@ -60,16 +60,20 @@ def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False
 
     # fig, axs = plt.subplots(figsize=size)
     plt.figure(figsize=size)
-    
-    g = sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True, cbar_kws=cbar_kw)
+    if label:
+        ticks = True
+    else:
+        ticks = False
+
+    g = sn.heatmap(Mat, square=True, xticklabels=ticks, yticklabels=ticks, cbar_kws=cbar_kw)
     g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
     if label:
         g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
         g.axes.set_yticklabels(labels=label,va='center',ha='left')
 
-    else:
-        g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
-        g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
+    # else:
+    #     g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
+    #     g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
 
     # seperate lines between
     if line:
@@ -240,20 +244,24 @@ def Silhouette(Mat:pd.DataFrame, groups:list, square=False):
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     score = []
-    for group in groups:
 
-        if len(group) == 1:
+    if len(groups) == 1:
+        return 0
+
+    for i in range(len(groups)):
+
+        if len(groups[i]) == 1:
             # if only one element in a group, the silhouette score is 0 (arbitrary)
             score.append(0)
             continue
 
-        out_groups = groups[:]
-        out_groups.remove(group)
+        out_groups = groups[0:i] + groups[i+1:]
+        # out_groups.remove(group)
 
-        for allele in group:
+        for allele in groups[i]:
             
             # distance within groups
-            ai = Mat.loc[group,allele].sum() / (len(group) - 1)
+            ai = Mat.loc[groups[i],allele].sum() / (len(groups[i]) - 1)
             # distance to neighbor cluster
             bi = np.min([Mat.loc[out_group,allele].sum() / len(out_group) for out_group in out_groups])
 
