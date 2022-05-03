@@ -44,7 +44,7 @@ def CGCalcMat(DATDir, AlleleListFile, contact, weight, sigma=None, w=None, pairw
 
 # ==== universal tools ====
 def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
-    sn.set(font_scale=2)
+    # sn.set(font_scale=3)
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
