@@ -471,16 +471,16 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
 
     ## ====crystal====
-    # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
-    # "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
-    # "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
+    cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
+    "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
+    "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
     # PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
     # for allele in ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01","B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01","B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]:
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
-    # for allele in cr_list:
-        # PDB_to_csv(f"../crystal/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
-        # FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
+    for allele in cr_list:
+        PDB_to_csv(f"../crystal/Class1/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
+        FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
     
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
