@@ -264,5 +264,5 @@ def CG_RMSD(InDAT, RefDAT):
     in_coord = in_df.loc[non_missing_res,['X', 'Y', 'Z']].values
     ref_coord = ref_df.loc[non_missing_res,['X', 'Y', 'Z']].values
 
-    RMSD = np.sqrt(np.linalg.norm(in_coord-ref_coord)/len(in_df))
+    RMSD = np.sqrt(np.linalg.norm(in_coord-ref_coord)**2/len(in_df))
     return RMSD
