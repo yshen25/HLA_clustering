@@ -453,17 +453,10 @@ def FullAtom_to_CG(DATDir, OutDir):
 
 if __name__ == "__main__":
 
-    ## ====relaxed====
-    # PDB_preprocess("../HLAA_relax/PDB", "1i4f_Crown.pdb", "../HLAA_relax/TRIM", "../HLAA_relax/ALIGN", "HLAA_relax_trim.csv")
-    # PDB_preprocess("../HLAB_relax/PDB", "1i4f_Crown.pdb", "../HLAB_relax/TRIM", "../HLAB_relax/ALIGN", "HLAB_relax_trim.csv")
-
-    # PDB_preprocess("../ext_model/PDB", "1i4f_Crown.pdb", "../ext_model/TRIM", "../ext_model/ALIGN", "ext_relax_trim.csv")
-    # PDB_to_csv("../ext_model/ALIGN", "../ext_model/DAT")
-    # FullAtom_to_CG("../ext_model/DAT", "../ext_model/CG_DAT")
-    # PDB_to_csv("../HLAB_relax/ALIGN", "../HLAB_relax/DAT")
-
-    # FullAtom_to_CG("../HLAA_relax/DAT", "../HLAA_relax/CG_DAT")
-    # FullAtom_to_CG("../HLAB_relax/DAT", "../HLAB_relax/CG_DAT")
+    ## ====models====
+    PDB_preprocess("../HLA1_models/PDB", "1i4f_Crown.pdb", "../HLA1_models/TRIM", "../HLA1_models/ALIGN", "HLA1_CF_trim.csv")
+    PDB_to_csv("../HLA1_models/ALIGN", "../HLA1_models/DAT")
+    FullAtom_to_CG("../HLA1_models/DAT", "../HLA1_models/CG_DAT")
 
     ## ====validation====
     # PDB_preprocess("../temp/PDB", "1i4f_Crown.pdb", "../temp/TRIM", "../temp/ALIGN", "temp_trim.csv")
@@ -471,16 +464,16 @@ if __name__ == "__main__":
     # FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
 
     ## ====crystal====
-    cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
-    "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
-    "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
+    # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
+    # "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
+    # "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
     # PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
     # for allele in ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01","B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01","B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]:
         # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
         # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
-    for allele in cr_list:
-        PDB_to_csv(f"../crystal/Class1/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
-        FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
+    # for allele in cr_list:
+    #     PDB_to_csv(f"../crystal/Class1/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
+    #     FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
     
     ## ==== figures ====
     # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
