@@ -454,7 +454,7 @@ def FullAtom_to_CG(DATDir, OutDir):
 if __name__ == "__main__":
 
     ## ====models====
-    PDB_preprocess("../HLA1_models/PDB", "1i4f_Crown.pdb", "../HLA1_models/TRIM", "../HLA1_models/ALIGN", "HLA1_CF_trim.csv")
+    # PDB_preprocess("../HLA1_models/PDB", "1i4f_Crown.pdb", "../HLA1_models/TRIM", "../HLA1_models/ALIGN", "HLA1_CF_trim.csv")
     PDB_to_csv("../HLA1_models/ALIGN", "../HLA1_models/DAT")
     FullAtom_to_CG("../HLA1_models/DAT", "../HLA1_models/CG_DAT")
 
