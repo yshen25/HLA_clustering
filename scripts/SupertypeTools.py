@@ -70,9 +70,9 @@ def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False
 
     g = sn.heatmap(Mat, square=True, xticklabels=ticks, yticklabels=ticks, cbar_kws=cbar_kw)
     g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
-    if label:
-        g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
-        g.axes.set_yticklabels(labels=label,va='center',ha='left')
+    # if label:
+    #     g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
+    #     g.axes.set_yticklabels(labels=label,va='center',ha='left')
 
     # else:
     #     g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
@@ -148,7 +148,7 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
 def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, centroid=False, color_threshold=None):
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
-    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True).fit(Mat)
+    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True, compute_full_tree=True).fit(Mat)
     result = pd.Series(model.labels_, index=Mat.index)
 
     order = None
