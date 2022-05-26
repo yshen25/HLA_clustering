@@ -11,7 +11,7 @@ from skbio import DistanceMatrix
 from skbio.tree import nj
 
 from CalcScore import Calculator
-from CGmodel import CGCalculator
+from CG_metric import CGCalculator
 
 from Bio import SeqIO, Align
 from itertools import combinations, count
@@ -29,18 +29,21 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
     return calc.DistMat
 
 # ==== coarse grain tools ====
-def CGCalcMat(DATDir, AlleleListFile, contact, weight, sigma=None, w=None, pairwise=False):
-
-    calc = CGCalculator(DATDir ,AlleleListFile, ContactResi=contact, ResiWeight=weight, Pairwise=pairwise)
+def CGCalcMat(CGDATDir, AlleleListFile=None, sigma=None, w=None, DistMat_output=None):
+    
+    metric = CGCalculator()
     if sigma:
-        calc.sigma = sigma
+        metric.sigma = sigma
 
     if w:
-        calc.w = w
+        metric.w = w
 
-    calc.CalcDist()
+    metric.CalcDist(CGDATDir, AlleleListFile)
 
-    return calc.DistMat
+    if DistMat_output:
+        metric.SaveDist(DistMat_output)
+
+    return metric.DistMat
 
 # ==== universal tools ====
 def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):

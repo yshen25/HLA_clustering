@@ -32,9 +32,6 @@ from pymol import cmd
 
 import pandas as pd
 
-from PropertyParams import PartialCharge, AtomicHydrophobicity
-from CGmodel import CenterOfMass
-
 class ChainSelector:
     """
     Adapted from Bio.PDB.Dice module
@@ -131,7 +128,7 @@ def PDB_trim(InDir, TemplatePDB, OutDir, OutCSV, chain="A", length=[179], templa
     record = []
 
     PepBuilder = PPBuilder()
-    parser = PDBParser(PERMISSIVE=1)
+    parser = PDBParser(PERMISSIVE=True, QUIET=True)
 
     TStruct = parser.get_structure("template", TemplatePDB)
     TSeqs = PepBuilder.build_peptides(TStruct)
@@ -289,140 +286,6 @@ def resi_depth(Struct, AtomCoord, PepSurf):
 
     return ResiDepth
 
-def PDB_to_csv(InDir, OutDir):
-    """
-    Assign parameters like partial charge to each atom, and store dataframe into csv file
-    """
-    # with open('ffcharge.pkl', 'rb') as inf:
-    #     ffcharge = pickle.load(inf)
-
-    ffcharge = PartialCharge
-    ffhydro = AtomicHydrophobicity
-
-    # with open('pep_surf.pkl', 'rb') as inf:
-    #     pep = pickle.load(inf)
-
-    if not os.path.exists(OutDir):
-        os.makedirs(OutDir)
-
-    for InPDB in os.listdir(InDir):
-        if InPDB.endswith(".pdb"):
-            print(InPDB)
-            OutList = []
-            '''
-            OutPKL = InPDB.split(".")[0] + ".pdb"
-            Struct_df.to_pickle(OutPKL)
-            print(f"Pickle file saved: {OutDir}/{OutPKL}")
-            '''
-            parser = PDBParser(PERMISSIVE=1)
-
-            TStruct = parser.get_structure("struct", f"{InDir}/{InPDB}")[0]
-            # i = 0 # used to record aa position
-            # pep_len = len(TStruct['A'])
-            for chain in TStruct:
-                for residue in chain:
-                    # i += 1
-                    # if i >= pep_len: # if the last one
-                    #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
-                    ResName = residue.resname
-                    ResNum = residue.id[1]
-                    
-                    if ResName == "HIS": # distinguish three protonation states of histidine
-                        
-                        if residue.has_id("HE2"):
-                            
-                            if residue.has_id("HD1"):
-                                ResName2 = "HIP" # H on both epsilon and delta N
-                            else:
-                                ResName2 = "HIE" # H on epsilon N only
-
-                        else:
-                            ResName2 = "HID" # H on delta N only. By default HIS is HID
-
-                    elif ResName == "MSE": # no partial charge value for MSE
-                        ResName = ResName2 = "MET"
-                    
-                    else:
-                        ResName2 = ResName
-                    
-                    for atom in residue:
-                        # Rosetta relax will automaticly change last Oxigen from O to OXT
-                        if atom.name == "OXT":
-                            atom.name = "O"
-                        # change Se in MSE to S
-                        elif atom.name == "SE":
-                            atom.name = "SD"
-
-                        X_coord, Y_coord, Z_coord = atom.coord[0:3]
-                        OutList.append([ResName, chain.id, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
-                        , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)]])
-
-            OutList = np.array(OutList)
-            # ResiDepth = resi_depth(TStruct, OutList[:,4:7], pep)
-            # InGroove = in_groove(f"{InDir}/{InPDB}", TStruct, OutList[:,4:7], pep)
-            # ResiDepth = InGroove = np.zeros((OutList.shape[0],1))
-
-            # print(OutList[:,4:7].shape)
-            # print(ResiDepth.shape)
-
-            # OutList = np.hstack((OutList, InGroove))
-            # OutDF = pd.DataFrame(OutList, columns=["Residue", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "InGroove"])
-
-            # OutList = np.hstack((OutList, ResiDepth, InGroove))
-            OutDF = pd.DataFrame(OutList, columns=["Residue", "Chain", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity"])
-
-            OutDF.to_csv(f"{OutDir}/{InPDB.split('.')[0] + '.csv'}", index=False)
-            # sys.exit()
-
-    return
-
-def CP_template(DATDir, RefDATDir, ALNDir, RefALNDir):
-    RefList = ["A01_01","A02_01","A02_02","A02_03","A02_04","A02_05","A02_06","A02_07","A02_14","A02_17"
-    ,"A03_01","A11_01","A23_01","A24_02","A26_01","A26_02","A26_03","A29_02","A30_01","A30_02","A30_03"
-    ,"A30_04","A31_01","A32_01","A33_01","A33_03","A66_01","A68_01","A68_02","A69_01","A74_01","B07_02"
-    ,"B07_03","B07_05","B08_01","B08_02","B14_02","B15_01","B15_02","B15_03","B15_08","B15_09","B15_10"
-    ,"B15_12","B15_13","B15_16","B15_17","B15_18","B18_01","B27_02","B27_03","B27_04","B27_05","B27_06"
-    ,"B27_07","B27_09","B35_01","B35_03","B37_01","B38_01","B39_01","B39_02","B39_09","B40_01","B40_02"
-    ,"B40_06","B42_01","B44_02","B44_03","B45_01","B46_01","B48_01","B51_01","B51_02","B51_03","B52_01"
-    ,"B53_01","B54_01","B55_01","B55_02","B56_01","B57_01","B57_02","B58_01","B58_02","B67_01","B73_01"
-    ,"B78_01"]
-
-    for InDAT in os.listdir(DATDir):
-        if InDAT.split(".")[0] in RefList:
-            shutil.copy2(f"{DATDir}/{InDAT}", RefDATDir)
-            print(f"Copy reference allele DAT file: {DATDir}/{InDAT}")
-
-    for InALN in os.listdir(ALNDir):
-        if InALN.split(".")[0] in RefList:
-            shutil.copy2(f"{ALNDir}/{InALN}", RefALNDir)
-            print(f"Copy reference allele aligned pdb file: {ALNDir}/{InALN}")
-
-    return
-
-def CreateRecord(DATDir, RecFile):
-    
-    RefList = ["A01_01","A02_01","A02_02","A02_03","A02_04","A02_05","A02_06","A02_07","A02_14","A02_17"
-    ,"A03_01","A11_01","A23_01","A24_02","A26_01","A26_02","A26_03","A29_02","A30_01","A30_02","A30_03"
-    ,"A30_04","A31_01","A32_01","A33_01","A33_03","A66_01","A68_01","A68_02","A69_01","A74_01","B07_02"
-    ,"B07_03","B07_05","B08_01","B08_02","B14_02","B15_01","B15_02","B15_03","B15_08","B15_09","B15_10"
-    ,"B15_12","B15_13","B15_16","B15_17","B15_18","B18_01","B27_02","B27_03","B27_04","B27_05","B27_06"
-    ,"B27_07","B27_09","B35_01","B35_03","B37_01","B38_01","B39_01","B39_02","B39_09","B40_01","B40_02"
-    ,"B40_06","B42_01","B44_02","B44_03","B45_01","B46_01","B48_01","B51_01","B51_02","B51_03","B52_01"
-    ,"B53_01","B54_01","B55_01","B55_02","B56_01","B57_01","B57_02","B58_01","B58_02","B67_01","B73_01"
-    ,"B78_01"]
-
-    record = []
-    for InDAT in sorted(os.listdir(DATDir)):
-        if InDAT.endswith(".csv"):
-            if InDAT.split(".")[0] in RefList:
-                record.append([InDAT.split(".")[0], 1])
-            else:
-                record.append([InDAT.split(".")[0], 0])
-    df = pd.DataFrame(record, columns=["Allele", "reference"])
-    df.to_csv(RecFile, index=False)
-
-    return
-
 def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV, **kwargs):
 
     if not os.path.exists(TrimDir):
@@ -436,55 +299,9 @@ def PDB_preprocess(PDBDIr, TemplatePDB, TrimDir, AlignDir, OutCSV, **kwargs):
 
     return
 
-def FullAtom_to_CG(DATDir, OutDir):
-    """
-    Input: full atom DAT directory
-    Output: coarse-grained DAT file
-    """
-    if not os.path.exists(OutDir):
-        os.makedirs(OutDir)
-
-    for InDAT in os.listdir(DATDir):
-        if InDAT.endswith(".csv"):
-            print(InDAT)
-            CenterOfMass(f"{DATDir}/{InDAT}", f"{OutDir}/{InDAT.split('.')[0]}_CG.csv")
-
-    return
-
 if __name__ == "__main__":
 
     ## ====models====
-    PDB_preprocess("../HLA1_models/Rosetta/PDB", "1i4f_Crown.pdb", "../HLA1_models/Rosetta/TRIM", "../HLA1_models/Rosetta/ALIGN", "HLA1_Rosetta_trim.csv")
-    # PDB_to_csv("../HLA1_models/Rosetta/ALIGN", "../HLA1_models/Rosetta/DAT")
-    # FullAtom_to_CG("../HLA1_models/Rosetta/DAT", "../HLA1_models/Rosetta/CG_DAT")
-
-    ## ====validation====
-    # PDB_preprocess("../temp/PDB", "1i4f_Crown.pdb", "../temp/TRIM", "../temp/ALIGN", "temp_trim.csv")
-    # PDB_to_csv("../temp/ALIGN", "../temp/DAT")
-    # FullAtom_to_CG("../temp/DAT", "../temp/CG_DAT")
-
-    ## ====crystal====
-    # cr_list = ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01",
-    # "B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01",
-    # "B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]
-    # PDB_preprocess("../crystal2/pdb_A", "1i4f_Crown.pdb", "../crystal2/TRIM", "../crystal2/ALIGN", "")
-    # for allele in ["A01_01","A02_01","A02_03","A02_06","A02_07","A03_01","A11_01","A24_02","A30_01","A30_03","A68_01","B07_02","B08_01","B14_02","B15_01","B18_01","B27_03","B27_04","B27_05","B27_06","B27_09","B35_01","B37_01","B39_01","B40_01","B40_02","B42_01","B44_02","B44_03","B46_01","B51_01","B57_01","B58_01","C03_04","C04_01","C05_01","C06_02","C08_01","C08_02"]:
-        # PDB_align(f"../crystal/{allele}/TRIM", "1i4f_Crown.pdb", f"../crystal/{allele}/ALIGN")
-        # PDB_preprocess(f"../crystal/CONFIRM/{allele}", "1i4f_Crown.pdb", f"../crystal/CONFIRM/{allele}/TRIM", f"../crystal/CONFIRM/{allele}/ALIGN", f"{allele}_trim.csv")
-    # for allele in cr_list:
-    #     PDB_to_csv(f"../crystal/Class1/CONFIRM/{allele}", f"../Figures/Figure1_RMSD/DAT/{allele}")
-    #     FullAtom_to_CG(f"../Figures/Figure1_RMSD/DAT/{allele}", f"../Figures/Figure1_RMSD/CG_DAT/{allele}")
-    
-    ## ==== figures ====
-    # FullAtom_to_CG("../Figures/Figure1_compare_to_existing/HLA-B/DAT", "../Figures/Figure1_compare_to_existing/HLA-B/CG_DAT")
-    # ext_list = ["A30_01", "A02_03", "A02_07", "B27_04", "B27_06", "B40_01", "B40_02", "B46_01"]
-    
-    # A_list = ["A01_01", "A02_01", "A02_06", "A03_01", "A11_01", "A23_01", "A24_02", "A30_03", "A68_01"]
-    # B_list = ["B07_02", "B08_01", "B14_02", "B15_01", "B18_01", "B27_03", "B27_05", "B27_09", "B35_01",
-    #     "B37_01", "B39_01", "B42_01", "B44_02", "B44_03", "B51_01", "B53_01", "B57_01", "B58_01"]
-    # for allele in ext_list:
-    #     PDB_to_csv(f"../crystal/{allele}/ALIGN", f"../crystal/{allele}/DAT")
-    #     FullAtom_to_CG(f"../crystal/{allele}/DAT", f"../crystal/{allele}/CG_DAT")
-    # FullAtom_to_CG("../Figures/Figure2_clustering_cr_hm/HLA-A/DAT", "../Figures/Figure2_clustering_cr_hm/HLA-A/CG_DAT")
+    PDB_preprocess("../HLA1_models/CF_relaxed/PDB", "1i4f_Crown.pdb", "../HLA1_models/CF_relaxed/TRIM", "../HLA1_models/CF_relaxed/ALIGN", "HLA1_CF_relaxed_trim.csv")
 
     pass
