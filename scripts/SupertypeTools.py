@@ -1,5 +1,4 @@
 # from turtle import right
-from pyexpat import model
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 import pandas as pd
 import numpy as np
@@ -12,7 +11,7 @@ from skbio import DistanceMatrix
 from skbio.tree import nj
 
 from CalcScore import Calculator
-from CGmodel import CGCalculator
+from CG_metric import CGCalculator
 
 from Bio import SeqIO, Align
 from itertools import combinations, count
@@ -30,18 +29,27 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
     return calc.DistMat
 
 # ==== coarse grain tools ====
-def CGCalcMat(DATDir, AlleleListFile, contact, weight, pairwise=False):
+def CGCalcMat(CGDATDir, AlleleListFile=None, sigma=None, w=None, DistMat_output=None):
+    
+    metric = CGCalculator()
+    if sigma:
+        metric.sigma = sigma
 
-    calc = CGCalculator(DATDir ,AlleleListFile, ContactResi=contact, ResiWeight=weight, Pairwise=pairwise)
+    if w:
+        metric.w = w
 
-    calc.CalcDist()
+    metric.CalcDist(CGDATDir, AlleleListFile)
 
-    return calc.DistMat
+    if DistMat_output:
+        metric.SaveDist(DistMat_output)
+
+    return metric.DistMat
 
 # ==== universal tools ====
-def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
-    # Mat = pd.read_csv(InCSV, index_col=0)
-    Mat = Mat.add(Mat.T, fill_value=0)
+def heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
+    # sn.set(font_scale=3)
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     # print(Mat.index)
 
     if order:
@@ -55,16 +63,20 @@ def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8,
 
     # fig, axs = plt.subplots(figsize=size)
     plt.figure(figsize=size)
-    
-    g = sn.heatmap(Mat, square=True, xticklabels=True, yticklabels=True, cbar_kws=cbar_kw)
-    g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
     if label:
-        g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
-        g.axes.set_yticklabels(labels=label,va='center',ha='left')
-
+        ticks = True
     else:
-        g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
-        g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
+        ticks = False
+
+    g = sn.heatmap(Mat, square=True, xticklabels=ticks, yticklabels=ticks, cbar_kws=cbar_kw)
+    g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
+    # if label:
+    #     g.axes.set_xticklabels(labels=label,va='bottom',ha='center')
+    #     g.axes.set_yticklabels(labels=label,va='center',ha='left')
+
+    # else:
+    #     g.axes.set_xticklabels(labels=g.axes.get_xticklabels(),va='bottom',ha='center')
+    #     g.axes.set_yticklabels(labels=g.axes.get_yticklabels(),va='center',ha='left')
 
     # seperate lines between
     if line:
@@ -76,9 +88,10 @@ def heatmap(Mat, order=None, size=(10,10), label=False, line=False, labelsize=8,
     plt.show()
     return
 
-def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, MinSample=5):
+def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, square=False, MinSample=5):
     # Mat = pd.read_csv(InCSV, index_col=0)
-    Mat = Mat.add(Mat.T, fill_value=0)
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     clustering = DBSCAN(eps=epsilon, min_samples=MinSample, metric="precomputed", n_jobs=-1).fit(Mat)
     labels = clustering.labels_
     result = pd.Series(labels, index=Mat.index)
@@ -120,7 +133,7 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
     # Plot the corresponding dendrogram
     plt.figure(figsize=(80,10))
     # fig, ax = plt.subplots(figsize=(80,10))
-    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=16, get_leaves=True, color_threshold=color_threshold)
+    dendro = dendrogram(linkage_matrix, truncate_mode=truncate, labels=labels, leaf_font_size=12, get_leaves=True, color_threshold=color_threshold)
 
     plt.show()
 
@@ -132,9 +145,10 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
 
     return dendro['leaves']
 
-def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None, plot_dendro=False, give_distances=False, color_threshold=None):
-    Mat = Mat.add(Mat.T, fill_value=0)
-    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True).fit(Mat)
+def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, centroid=False, color_threshold=None):
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
+    model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True, compute_full_tree=True).fit(Mat)
     result = pd.Series(model.labels_, index=Mat.index)
 
     order = None
@@ -142,12 +156,18 @@ def hierarchical_cluster(Mat, N, L, threshold=None, outtree=None, plot_dendro=Fa
     if plot_dendro:
         order = plot_dendrogram(model, None, Mat.index, color_threshold, outtree)
 
-    if give_distances:
-        dist = model.distances_
+    if centroid:
+        centers = []
+        for i in result.groupby(by=result):
+            group = i[1].index.to_numpy()
+            centers.append(Mat.loc[group,group].sum(axis=0).idxmin())
 
-        return result, dist
+        return result, order, pd.Series(range(len(centers)), index=centers)
 
     return result, order
+
+def robust_cluster():
+    return
 
 
 """
@@ -169,8 +189,10 @@ def dendro(Mat, OutTreeFile):
     return
 """
 
-def Matrix2Dendro(Mat, OutTreeFile=None, label=None):
-    Mat = Mat.add(Mat.T, fill_value=0)
+def Matrix2Dendro(Mat, square=False, OutTreeFile=None, label=None):
+        
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
     
     # if label:
     #     Mat = pd.DataFrame(Mat.values, index=label, columns=label)
@@ -209,14 +231,49 @@ def MSAMat(InFile, scale=1):
 
     return DistMat
 
-def SSE(mat, groups:list):
+def SSE(mat:pd.DataFrame, groups:list):
     # mat = pd.read_csv(MatrixCSV, index_col=0)
-
+    # SSE divided by number of elements in each cluster
     sum_SSE = 0
 
     for group in groups:
         # print(group)
         group_square = mat.loc[group,group]
-        sum_SSE += group_square.values.sum()
+        sum_SSE += group_square.values.sum()/group_square.shape[0]
     
     return sum_SSE
+
+def Silhouette(Mat:pd.DataFrame, groups:list, square=False):
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
+    score = []
+
+    if len(groups) == 1:
+        return 0
+
+    for i in range(len(groups)):
+
+        if len(groups[i]) == 1:
+            # if only one element in a group, the silhouette score is 0 (arbitrary)
+            score.append(0)
+            continue
+
+        out_groups = groups[0:i] + groups[i+1:]
+        # out_groups.remove(group)
+
+        for allele in groups[i]:
+            
+            # distance within groups
+            ai = Mat.loc[groups[i],allele].sum() / (len(groups[i]) - 1)
+            # distance to neighbor cluster
+            bi = np.min([Mat.loc[out_group,allele].sum() / len(out_group) for out_group in out_groups])
+
+            if ai <= bi:
+                score.append(1-ai/bi)
+
+            else:
+                score.append(bi/ai-1)
+
+        # print(score)
+
+    return np.mean(score)
