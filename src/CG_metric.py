@@ -23,7 +23,7 @@ class CGCalculator():
         
         # # fixed parameters
         self.sigma = 0.5
-        self.w = 1
+        self.k = 1
 
         if SimilarityMatrix == "Grantham":
             self.SimMtx = GranthamSim
@@ -74,7 +74,7 @@ class CGCalculator():
         
         ResiPairSim_score = self.ResiPairSim(ResiA, ResiB)
 
-        SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.w * ResiPairSim_score * np.outer(WeightA, WeightB) )
+        SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.k * ResiPairSim_score * np.outer(WeightA, WeightB) )
 
         return SimScore
 

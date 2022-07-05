@@ -23,7 +23,7 @@ from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 import matplotlib.cm as cm
 import open3d as o3d
 
-from .PropertyParams import AtomicMass, PartialCharge, AtomicHydrophobicity
+from PropertyParams import AtomicMass, PartialCharge, AtomicHydrophobicity
 
 def BB_RMSD(Qpdb, Rpdb):
 

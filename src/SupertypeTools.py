@@ -32,7 +32,7 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
 
     return calc.DistMat
 
-def CGCalcMat(CGDATDir, SimilarityMatrix="Grantham", AlleleListFile=None, sigma=None, w=None, DistMat_output=None):
+def CGCalcMat(CGDATDir, SimilarityMatrix="Grantham", AlleleListFile=None, sigma=None, k=None, DistMat_output=None):
     """
     Using coarse-grained distance metric
     """
@@ -40,8 +40,8 @@ def CGCalcMat(CGDATDir, SimilarityMatrix="Grantham", AlleleListFile=None, sigma=
     if sigma:
         metric.sigma = sigma
 
-    if w:
-        metric.w = w
+    if k:
+        metric.k = k
 
     metric.CalcDist(CGDATDir, AlleleListFile)
 
@@ -225,10 +225,16 @@ def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_pl
         x_vals = np.array([0, 1])
         y_vals = intercept + slope * x_vals
         plt.plot(x_vals, y_vals, '--')
-        plt.text(0.05,0.95, f"R = {round(rvalue, 3)}", fontsize=24, va='baseline')
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.xlabel("Structure distance", fontsize=24)
+        plt.ylabel("Peptide binding specificity distance", fontsize=24)
+
+        plt.text(0.02,0.95, f"y = {round(slope, 3)}x+{round(intercept, 3)}", fontsize=24)
+        plt.text(0.02,0.9, f"R = {round(rvalue, 3)}", fontsize=24)
         plt.show()
     
-    return rvalue
+    return
 
 # def Matrix2Dendro(Mat, square=False, OutTreeFile=None, label=None):
 #     """
