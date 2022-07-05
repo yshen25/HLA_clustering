@@ -19,11 +19,169 @@ import numpy as np
 import pandas as pd
 from pymol import cmd
 from Bio.PDB.PDBParser import PDBParser
+from Bio.PDB.Polypeptide import PPBuilder
+from Bio.Align import PairwiseAligner
+from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 import matplotlib.cm as cm
 import open3d as o3d
 
-from PropertyParams import AtomicMass, PartialCharge, AtomicHydrophobicity
+from .PropertyParams import AtomicMass, PartialCharge, AtomicHydrophobicity
+
+class ChainSelector:
+    """
+    Adapted from Bio.PDB.Dice module
+    Only accepts residues with right chainid, between start and end.
+    Remove waters and ligands. Only use model 0 by default.
+    Hydrogens are kept
+    """
+
+    def __init__(self, chain_id, start, end, model_id=0):
+        """Initialize the class."""
+        self.chain_id = chain_id
+        self.start = start
+        self.end = end
+        self.model_id = model_id
+
+    def accept_model(self, model):
+        """Verify if model match the model identifier."""
+        # model - only keep model 0
+        if model.get_id() == self.model_id:
+            return 1
+        return 0
+
+    def accept_chain(self, chain):
+        """Verify if chain match chain identifier."""
+        if chain.get_id() in self.chain_id:
+            return 1
+        return 0
+
+    def accept_residue(self, residue):
+        """Verify if a residue sequence is between the start and end sequence."""
+        # residue - between start and end
+        hetatm_flag, loc, icode = residue.get_id()
+        chain_ = residue.parent.get_id()
+        if hetatm_flag != " ":
+            # skip HETATMS
+            return 0
+        if icode != " ":
+            print(f"WARNING: Icode {icode} at position {loc}")
+        if self.start[self.chain_id.index(chain_)] <= loc <= self.end[self.chain_id.index(chain_)]:
+            return 1
+        return 0
+
+    def accept_atom(self, atom):
+        """Modified to accept all atoms including hydrogens"""
+        
+        # _hydrogen = re.compile("[123 ]*H.*")
+
+        # if _hydrogen.match(atom.get_id()): # remove hydrogens
+        #     return 0
+        if "H" in atom.get_id(): # new way to remove hydrogens
+            return 0
+
+        if atom.altloc not in [" ", "A"]: # remove altloc atoms
+            return 0
+
+        return 1
+
+def extract(structure, chain_id, start, end, filename):
+    """Write out selected portion of structure to <filename (pdb)>."""
+    sel = ChainSelector(chain_id, start, end)
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save(filename, sel)
+
+    return
+
+def PDB_renumber(struct, start:list):
+    """
+    renumber pdb files, the first residue in pdb file is indexed as start number
+    each chain is given a start number in alphabat order
+    """
+    for i, chain in enumerate(struct[0]):
+    #loop 1: renumber residues to negative number to avoid errors
+        residue_id = -1
+        for residue in chain.get_residues():
+            residue.id=(' ',residue_id,' ')
+            residue_id -= 1
+        #loop 2
+        residue_id = start[i]
+        for residue in chain.get_residues():
+            #print(chain.get_id(), residue_id)
+            residue.id=(' ',residue_id,' ')
+            residue_id += 1
+    return struct
+
+def PDB_trim(InDir, TemplatePDB, OutDir, chain="A", length=[179], template_start_id=[2]):
+    """
+    PDB structure trim to have same residues as the tamplate
+    """
+    # length=[179] # HLA1
+    # start_id=[2] # HLA1, 1i4f
+    # length = [80, 85] # HLA2
+    # template_start_id = [4,7] # HLA2, 1klu
+    # record = []
+
+    PepBuilder = PPBuilder()
+    parser = PDBParser(PERMISSIVE=True, QUIET=True)
+
+    TStruct = parser.get_structure("template", TemplatePDB)
+    TSeqs = PepBuilder.build_peptides(TStruct)
+    
+    aligner = PairwiseAligner()
+    aligner.gap_score = -10 # no gap wanted
+
+    for InPDB in os.listdir(InDir):
+        if InPDB.endswith(".pdb"):
+            print("trim:", InPDB)
+            InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
+            Seqs = PepBuilder.build_peptides(InStruct[0])
+            qends = []
+            qstarts = []
+            for i, chain_identifier in enumerate(chain):
+                InSeq = Seqs[i].get_sequence()
+                TSeq = TSeqs[i].get_sequence()
+            
+                starting_loc = InStruct[0][chain_identifier].child_list[0]._id[1] # index of the first residue
+                alignments = aligner.align(InSeq, TSeq)
+
+            ## === archive, stand-alone trim ===
+            # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
+            # qend = qstart + 178 # fixed length
+            #qend = alignments[0].aligned[0][-1][-1] # aligned portion
+            
+            ## === use with PDB_renumber ===
+                # qstart = starting_loc - alignments[0].aligned[0][0][0] + template_start_id[i] -1
+                qstart = starting_loc + alignments[0].aligned[1][0][0] - alignments[0].aligned[0][0][0] + template_start_id[i] -1
+                # starting loc is calibarated, for the 1st residue in template is not loc 1
+                qend = length[i]
+
+                qstarts.append(qstart)
+                qends.append(qend)
+                
+                # record.append([InPDB, chain_identifier, qstart, qend, qend-qstart+1])
+
+            OutPDB = InPDB
+
+            # InStruct = PDB_renumber(InStruct, qstart)
+            # extract(InStruct, chain, start_id, qends, f"{OutDir}/{OutPDB}") # HLA1
+            InStruct = PDB_renumber(InStruct, qstarts)
+            extract(InStruct, chain, [2,2], qends, f"{OutDir}/{OutPDB}")
+            #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
+            
+
+    # df = pd.DataFrame(record, columns=["FileName", "chain", "qstart", "qend", "length"])
+    # df.to_csv(OutCSV)
+
+    return
+
+def PDB_trim(InDir, TemplatePDB, OutDir):
+    """
+    PDB structure trim to have same residues as the tamplate
+    """
+    
+    return
 
 def BB_RMSD(Qpdb, Rpdb):
 
@@ -254,9 +412,6 @@ def PointCloudCG(DATDir, OutDir):
     Input: full atom DAT directory
     Output: coarse-grained DAT file
     """
-    if not os.path.exists(OutDir):
-        os.makedirs(OutDir)
-
     for InDAT in glob.glob(f"{DATDir}/*.csv"):
         CoarseGrain(InDAT, f"{OutDir}/{Path(InDAT).stem}_CG.csv")
 
@@ -275,8 +430,8 @@ def dist_threshold():
     return
 
 def PDBtoPointCloud(InputDir:Union[str, bytes, os.PathLike], AlignDir:Union[str, bytes, os.PathLike], 
-    PCDir:Union[str, bytes, os.PathLike], SSAlign:bool=False, trim:bool=False, TrimDir:Union[str, bytes, os.PathLike]=None, 
-    RefPDB:Union[str, bytes, os.PathLike]=None)->None:
+    PCDir:Union[str, bytes, os.PathLike], TrimDir:Union[str, bytes, os.PathLike]=None, CGDir:Union[str, bytes, os.PathLike]=None, 
+    SSAlign:bool=False, RefPDB:Union[str, bytes, os.PathLike]=None)->None:
     """
     Turn PDB file into atom cloud
     ====================
@@ -290,11 +445,12 @@ def PDBtoPointCloud(InputDir:Union[str, bytes, os.PathLike], AlignDir:Union[str,
     # ===== validate parameters =====
     # If trim, the RefPDB must be specified
     # if trim, the TRIM dir must be specified
-    if trim:
+    if TrimDir:
         if not RefPDB:
             raise ValueError("If enable trim, a RefPDB must be specified")
-        if not TrimDir:
-            raise ValueError("If enable trim, the trim directory must be specified")
+        if not os.path.exists(TrimDir):
+            print(f"Create directory for trimmed PDBs: {TrimDir}")
+        PDB_trim()
     
     # ===== Align =====
     if not os.path.exists(AlignDir):
@@ -307,6 +463,13 @@ def PDBtoPointCloud(InputDir:Union[str, bytes, os.PathLike], AlignDir:Union[str,
         print(f"Create directory for point cloud CSVs: {PCDir}")
         os.mkdir(PCDir)
     PDB_to_csv(AlignDir, PCDir)
+
+    # ===== Coarse graining =====
+    if CGDir:
+        if not os.path.exists(CGDir):
+            print(f"Create directory for coarse-grained point cloud CSVs: {CGDir}")
+            os.mkdir(CGDir)
+        PointCloudCG(PCDir, CGDir)
     return
 
 class assign_weight:

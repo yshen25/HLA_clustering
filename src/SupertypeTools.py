@@ -32,11 +32,22 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
 
     return calc.DistMat
 
-def CGCalcMat(CGDATDir, SimilarityMatrix="Grantham", AlleleListFile=None, sigma=None, k=None, DistMat_output=None):
+def CGCalcMat(CGDATDir, SimMtx="Grantham", AlleleListFile=None, sigma=None, k=None, DistMat_output=None, Standardize:bool=False):
     """
     Using coarse-grained distance metric
+    ====================================
+    Input:
+        CGDATDir: Directory of coarse-grained HLA structures
+        SimMtx (optional): Similarity matrix, choose from ["Grantham", "SM_THREAD_NORM", "PMBEC"]
+        AlleleListFile (optional): List file for selecting alleles, see "../Dataset_split" directory
+        sigma, k (optional): Shape parameters
+        DistMat_output (optional): File name of distance matrix
+        Standardize (optional): If true, standardize the distance matrix to [0-1]
+
+    Output:
+        Distance_matrix
     """
-    metric = CGCalculator(SimilarityMatrix=SimilarityMatrix)
+    metric = CGCalculator(SimilarityMatrix=SimMtx)
     if sigma:
         metric.sigma = sigma
 
@@ -44,6 +55,9 @@ def CGCalcMat(CGDATDir, SimilarityMatrix="Grantham", AlleleListFile=None, sigma=
         metric.k = k
 
     metric.CalcDist(CGDATDir, AlleleListFile)
+
+    if Standardize:
+        metric.DistMat = (metric.DistMat - metric.DistMat.min().min()) / (metric.DistMat.max().max() - metric.DistMat.min().min())
 
     if DistMat_output:
         metric.SaveDist(DistMat_output)
@@ -118,9 +132,10 @@ def dist_heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=
             flat_order = order
         Mat = Mat[flat_order] # re-arrange row order
         Mat = Mat.reindex(flat_order) # re-arrange column order
-    # standardize to 0 - 1
-    Mat = (Mat - np.min(Mat)) / (np.max(Mat) - np.min(Mat))
 
+    # standardize to [0,1]
+    Mat = (Mat - Mat.min().min()) / (Mat.max().max() - Mat.min().min())
+    
     plt.figure(figsize=size)
     if label:
         ticks = True
@@ -198,13 +213,13 @@ def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_pl
         flat_order = [item for sublist in order for item in sublist]
     else:
         flat_order = order
-
-    Strct_Mat = Strct_Mat.loc[flat_order, flat_order] # re-arrange row order
+    
     Strct_Mat += Strct_Mat.T
-
-    BA_Mat = BA_Mat.loc[flat_order, flat_order]
+    Strct_Mat = Strct_Mat.loc[flat_order, flat_order] # re-arrange row order
+    
     BA_Mat += BA_Mat.T
-
+    BA_Mat = BA_Mat.loc[flat_order, flat_order]
+    
     keep = np.invert(np.triu(np.ones(Strct_Mat.shape)).astype('bool')).flatten()
 
     Strct_List = Strct_Mat.to_numpy().flatten()[keep]
@@ -215,6 +230,11 @@ def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_pl
     y_ab = (BA_List - np.min(BA_List)) / (np.max(BA_List) - np.min(BA_List))
 
     slope, intercept, rvalue, _, _ = linregress(x_struct, y_ab)
+
+    if intercept >= 0:
+        equation = f"y = {round(slope, 3)}x+{round(intercept, 3)}"
+    else:
+        equation = f"y = {round(slope, 3)}x{round(intercept, 3)}"
 
     if show_plot:
         plt.figure(figsize=(10,10))
@@ -230,11 +250,11 @@ def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_pl
         plt.xlabel("Structure distance", fontsize=24)
         plt.ylabel("Peptide binding specificity distance", fontsize=24)
 
-        plt.text(0.02,0.95, f"y = {round(slope, 3)}x+{round(intercept, 3)}", fontsize=24)
+        plt.text(0.02,0.95, equation, fontsize=24)
         plt.text(0.02,0.9, f"R = {round(rvalue, 3)}", fontsize=24)
         plt.show()
     
-    return
+    return (slope, intercept, rvalue)
 
 # def Matrix2Dendro(Mat, square=False, OutTreeFile=None, label=None):
 #     """

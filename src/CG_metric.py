@@ -36,13 +36,7 @@ class CGCalculator():
 
         else:
             raise ValueError(f"Similarity Matrix not recognized: {SimilarityMatrix}")
-
-        # Allele combinations
-
-        # DATList = [InDAT.split(".")[0] for InDAT in sorted(os.listdir(DATDir)) if InDAT.endswith(".csv")]
-
-        # self.DistMat = pd.DataFrame(np.zeros((len(AlleleList), len(AlleleList))), index=AlleleList, columns=AlleleList)
-
+            
     def ParamExtract(self, DATFile):
         DAT = pd.read_csv(DATFile)
 
@@ -96,9 +90,12 @@ class CGCalculator():
         return
     
     def CalcDist(self, DATDir, ListFile=None):
-        
         """
         Distance of two molecules in PDB files
+        ======================================
+        Input:
+            DATDir: Directory of coarse-grained HLA structures
+            ListFile (optional): List file for selecting alleles, see "../Dataset_split" directory
         """
         DATList = [InDAT for InDAT in glob.glob(f"{DATDir}/*.csv")]
         if ListFile:
