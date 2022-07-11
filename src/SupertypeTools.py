@@ -11,14 +11,13 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 from scipy.stats import linregress
 
-from skbio import DistanceMatrix
-from skbio.tree import nj
-
 from .CalcScore import Calculator
 from .CG_metric import CGCalculator
 
 from Bio import SeqIO, Align
-from itertools import combinations, count
+from itertools import combinations
+
+# from sklearn.linear_model import LinearRegression
 
 # ==== Calculating distance matrix ====
 def CalcMat(DATDir, AlleleListFile, contact, weight):
@@ -32,7 +31,7 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
 
     return calc.DistMat
 
-def CGCalcMat(CGDATDir, SimMtx="Grantham", AlleleListFile=None, sigma=None, k=None, DistMat_output=None, Standardize:bool=False):
+def CGCalcMat(CGDATDir, AlleleListFile, SimMtx="Grantham", sigma=None, k=None, DistMat_output=None, Standardize:bool=False):
     """
     Using coarse-grained distance metric
     ====================================
@@ -117,7 +116,7 @@ def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, square=False, MinSample=5):
     return result
 
 # ==== Visualization tools ====
-def dist_heatmap(Mat, square=False, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
+def dist_heatmap(Mat, square=True, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
     """
     Visualize distance matrix as heatmap
     """
@@ -204,46 +203,70 @@ def plot_dendrogram(model, truncate, labels, color_threshold, outtree=None):
 
     return dendro['leaves']
 
-def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_plot=True):
-    """
-    Correlation plot between two matrix
-    """
+def square2triangle(InMat):
+    keep = np.invert(np.triu(np.ones(InMat.shape)).astype('bool'))
+    return InMat.mask(keep, other=0)
 
+def triangle2square(InMat):
+    return InMat.add(InMat.T, fill_value=0)
+
+def crop_mtx(Mtx:pd.DataFrame, order:list, flatten:bool=False):
+    
     if type(order[0]) == list:
         flat_order = [item for sublist in order for item in sublist]
     else:
         flat_order = order
     
-    Strct_Mat += Strct_Mat.T
-    Strct_Mat = Strct_Mat.loc[flat_order, flat_order] # re-arrange row order
-    
-    BA_Mat += BA_Mat.T
-    BA_Mat = BA_Mat.loc[flat_order, flat_order]
-    
-    keep = np.invert(np.triu(np.ones(Strct_Mat.shape)).astype('bool')).flatten()
+    Mtx = Mtx.loc[flat_order, flat_order] # re-arrange row order
 
-    Strct_List = Strct_Mat.to_numpy().flatten()[keep]
-    BA_List = BA_Mat.to_numpy().flatten()[keep]
+    if flatten:
+        # since matrix is symmetric, each pairwise distance exist 2 copies
+        # first extract lower triangle (no diagonal), then extract values to make sure only extract unique values
+        keep = np.invert(np.triu(np.ones(Mtx.shape)).astype('bool')).flatten()
+        return Mtx.to_numpy().flatten()[keep]
+
+    return Mtx
+
+def correlation(ArrayA, ArrayB, show_plot=True):
+    """
+    Correlation plot between two array
+    =============================
+    Input:
+        ArrayA, ArrayB: 1-D array with same shape
+        show_plot: if true, draw correlation plot
+    return:
+        (slope, intercept, rvalue)
+    """
 
     # standardize to 0-1
-    x_struct = (Strct_List - np.min(Strct_List)) / (np.max(Strct_List) - np.min(Strct_List))
-    y_ab = (BA_List - np.min(BA_List)) / (np.max(BA_List) - np.min(BA_List))
+    xx = (ArrayA - np.min(ArrayA)) / (np.max(ArrayA) - np.min(ArrayA))
+    yy = (ArrayB - np.min(ArrayB)) / (np.max(ArrayB) - np.min(ArrayB))
 
-    slope, intercept, rvalue, _, _ = linregress(x_struct, y_ab)
+    # xx = xx.reshape(-1, 1)
+    # yy = yy.reshape(-1, 1)
+
+    # rgs = LinearRegression(fit_intercept=True)
+    # rgs.fit(xx, yy)
+    # slope, intercept, rvalue = rgs.coef_[0][0], rgs.intercept_[0], rgs.score(xx, yy)    
+
+    slope, intercept, rvalue, _, _ = linregress(xx, yy)
+
+    # equation = f"Y = {round(slope, 3)}X"
 
     if intercept >= 0:
-        equation = f"y = {round(slope, 3)}x+{round(intercept, 3)}"
+        equation = f"Y = {round(slope, 3)}X+{round(intercept, 3)}"
     else:
-        equation = f"y = {round(slope, 3)}x{round(intercept, 3)}"
-
+        equation = f"Y = {round(slope, 3)}X{round(intercept, 3)}"
+    # intercept = 0
     if show_plot:
         plt.figure(figsize=(10,10))
         plt.xlim(0,1)
         plt.ylim(0,1)
-        plt.scatter(x_struct, y_ab)
+        plt.scatter(xx, yy)
 
         x_vals = np.array([0, 1])
         y_vals = intercept + slope * x_vals
+        # y_vals = slope * x_vals
         plt.plot(x_vals, y_vals, '--')
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
@@ -256,38 +279,18 @@ def correlation(Strct_Mat:pd.DataFrame, BA_Mat:pd.DataFrame, order:list, show_pl
     
     return (slope, intercept, rvalue)
 
-# def Matrix2Dendro(Mat, square=False, OutTreeFile=None, label=None):
-#     """
-#     Simplified method for drawing dendrogram
-#     """
-        
-#     if not square:
-#         Mat = Mat.add(Mat.T, fill_value=0)
-
-#     dm = DistanceMatrix(Mat, Mat.columns)
-#     tree = nj(dm)
-
-#     if OutTreeFile:
-#         result = str(tree)
-
-#         if label:
-#             for old_string, dst_string in zip(Mat.columns, label):
-#                 result = result.replace(old_string, dst_string)
-        
-#         with open(OutTreeFile, "w") as out:
-#             out.write(result)
-    
-#     return
-
-def SSE(mat:pd.DataFrame, groups:list):
-
+def SSE(Mat:pd.DataFrame, clusters:list, square=True):
     # SSE divided by number of elements in each cluster
+    if not square:
+        Mat = Mat.add(Mat.T, fill_value=0)
+    
     sum_SSE = 0
 
-    for group in groups:
-        # print(group)
-        group_square = mat.loc[group,group]
-        sum_SSE += group_square.values.sum()/group_square.shape[0]
+    for clst in clusters:
+        
+        clst_mat = Mat.loc[clst, clst]
+        centroid = clst_mat.sum().idxmin()
+        sum_SSE += clst_mat[centroid].pow(2).sum()
     
     return sum_SSE
 
@@ -307,7 +310,6 @@ def Silhouette(Mat:pd.DataFrame, groups:list, square=False):
             continue
 
         out_groups = groups[0:i] + groups[i+1:]
-        # out_groups.remove(group)
 
         for allele in groups[i]:
             
@@ -326,54 +328,48 @@ def Silhouette(Mat:pd.DataFrame, groups:list, square=False):
 
     return np.mean(score)
 
-def Tuning_N(StructureDistMat, BADistMat, Nmin, Nmax, StructSilhouette=False, BASilhouette=False) -> tuple:
+def Tuning_N(ClusterMat, Nmin, Nmax, RefMat=None, ClusterSilhouette=False, RefSilhouette=False) -> tuple:
     """
     Determining optimized number of clusters
     Arguments:
-        StructureDistMat: Structure distance matrix
-        BADistMat: Binding specificity distance matrix
+        ClusterMat: Distance matrix that the clustering is based on, lower triangular form
+        RefMat: Distance matrix that the performance accessment is based on, lower triangular form
         Nmin: starting number of clusters
         Nmax: ending number of clusters
     Return:
         (StructSSE, BASSE, StructSilhouette, BASilhouette)
     """
-    StructSSE = []
-    BASSE = []
-    Silhouette_S = []
-    Silhouette_BA = []
+    ClusterSSE = []
+    RefSSE = []
+    Silhouette_C = []
+    Silhouette_R = []
 
     # dist_list = []
 
     for i in range(Nmin, Nmax+1):
 
         # initialize optional parameters
-        BA_err = 'NA'
-        SilhouetteScore = 'NA'
-        BASilhouetteScore = 'NA'
+        # BA_err = 'NA'
+        # SilhouetteScore = 'NA'
+        # BASilhouetteScore = 'NA'
 
-        cluster, _ = hierarchical_cluster(StructureDistMat, N=i, L='complete', threshold=None)
+        cluster, _ = hierarchical_cluster(ClusterMat, square=True, N=i, L='complete', threshold=None)
         #complete average single
-        groups = [i[1].index.tolist() for i in cluster.groupby(cluster)]
+        groups = [group[1].index.tolist() for group in cluster.groupby(cluster)]
         # print(groups)
         
-        Struct_err = SSE(StructureDistMat, groups)
-        StructSSE.append(Struct_err)
+        ClusterSSE.append(SSE(ClusterMat, groups))
 
-        if BADistMat is not None:
-            BA_err = SSE(BADistMat, groups)
-            BASSE.append(BA_err)
+        if RefMat is not None:
+            RefSSE.append(SSE(RefMat, groups))
 
-        if StructSilhouette:
-            SilhouetteScore = Silhouette(StructureDistMat, groups)
-            Silhouette_S.append(SilhouetteScore)
+        if ClusterSilhouette:
+            Silhouette_C.append(Silhouette(ClusterMat, groups))
 
-        if BASilhouette:
-            BASilhouetteScore = Silhouette(BADistMat, groups)
-            Silhouette_BA.append(BASilhouetteScore)
+        if RefSilhouette:
+            Silhouette_R.append(Silhouette(RefMat, groups))
 
-        # print(f"N={i}  SE: {Struct_err} / BE: {BA_err} / SS: {SilhouetteScore} / BS: {BASilhouetteScore}")
-
-    return StructSSE, BASSE, Silhouette_S, Silhouette_BA
+    return ClusterSSE, RefSSE, Silhouette_C, Silhouette_R
 
 def elbow_plot(Struct_Mat, BA_Mat, Additional_Bar_group:list=None, Nmin=1, Nmax=12):
     """

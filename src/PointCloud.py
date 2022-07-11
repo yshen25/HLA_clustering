@@ -9,6 +9,7 @@ import glob
 from string import digits
 from itertools import combinations
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Union
 from itertools import groupby
 from operator import itemgetter
@@ -18,168 +19,77 @@ import numpy as np
 # from scipy.stats import hypsecant
 import pandas as pd
 from pymol import cmd
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import PPBuilder
 from Bio.Align import PairwiseAligner
-from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB.DSSP import dssp_dict_from_pdb_file
+
+from biopandas.pdb import PandasPdb
 import matplotlib.cm as cm
-import open3d as o3d
+# import open3d as o3d
 
 from .PropertyParams import AtomicMass, PartialCharge, AtomicHydrophobicity
 
-class ChainSelector:
-    """
-    Adapted from Bio.PDB.Dice module
-    Only accepts residues with right chainid, between start and end.
-    Remove waters and ligands. Only use model 0 by default.
-    Hydrogens are kept
-    """
+def _Seqinfo_from_struct(Struct):
+    # Struct = PandasPdb().read_pdb(PDBfile)
+    Seq_df = Struct.amino3to1()
 
-    def __init__(self, chain_id, start, end, model_id=0):
-        """Initialize the class."""
-        self.chain_id = chain_id
-        self.start = start
-        self.end = end
-        self.model_id = model_id
+    info = {} # chain: (start, stop, sequence)
+    for group in Struct.df['ATOM'].groupby(['chain_id']):
+        # group[0]: chain id
+        sequence = ''.join(list(Seq_df[Seq_df['chain_id'] == group[0]]['residue_name']))
+        info[group[0]] = [group[1].iloc[0]['residue_number'], group[1].iloc[-1]['residue_number'], sequence]
 
-    def accept_model(self, model):
-        """Verify if model match the model identifier."""
-        # model - only keep model 0
-        if model.get_id() == self.model_id:
-            return 1
-        return 0
+    return info
 
-    def accept_chain(self, chain):
-        """Verify if chain match chain identifier."""
-        if chain.get_id() in self.chain_id:
-            return 1
-        return 0
+def _trim_renumber_struct(Struct, Qinfo, Tinfo):
+    trimmed = []
+    for chain in Qinfo:
+        Qstart = Qinfo[chain][0]
+        Qend = Qinfo[chain][1]
+        trimmed_chain = Struct.df['ATOM'].query(f"chain_id == '{chain}' and {Qstart} <= residue_number <= {Qend}").copy()
 
-    def accept_residue(self, residue):
-        """Verify if a residue sequence is between the start and end sequence."""
-        # residue - between start and end
-        hetatm_flag, loc, icode = residue.get_id()
-        chain_ = residue.parent.get_id()
-        if hetatm_flag != " ":
-            # skip HETATMS
-            return 0
-        if icode != " ":
-            print(f"WARNING: Icode {icode} at position {loc}")
-        if self.start[self.chain_id.index(chain_)] <= loc <= self.end[self.chain_id.index(chain_)]:
-            return 1
-        return 0
+        Tstart = Tinfo[chain][0]
+        shift = Tstart - Qstart # how many positions are shifted
+        trimmed_chain.loc[:,'residue_number'] += shift
 
-    def accept_atom(self, atom):
-        """Modified to accept all atoms including hydrogens"""
-        
-        # _hydrogen = re.compile("[123 ]*H.*")
-
-        # if _hydrogen.match(atom.get_id()): # remove hydrogens
-        #     return 0
-        if "H" in atom.get_id(): # new way to remove hydrogens
-            return 0
-
-        if atom.altloc not in [" ", "A"]: # remove altloc atoms
-            return 0
-
-        return 1
-
-def extract(structure, chain_id, start, end, filename):
-    """Write out selected portion of structure to <filename (pdb)>."""
-    sel = ChainSelector(chain_id, start, end)
-    io = PDBIO()
-    io.set_structure(structure)
-    io.save(filename, sel)
-
-    return
-
-def PDB_renumber(struct, start:list):
-    """
-    renumber pdb files, the first residue in pdb file is indexed as start number
-    each chain is given a start number in alphabat order
-    """
-    for i, chain in enumerate(struct[0]):
-    #loop 1: renumber residues to negative number to avoid errors
-        residue_id = -1
-        for residue in chain.get_residues():
-            residue.id=(' ',residue_id,' ')
-            residue_id -= 1
-        #loop 2
-        residue_id = start[i]
-        for residue in chain.get_residues():
-            #print(chain.get_id(), residue_id)
-            residue.id=(' ',residue_id,' ')
-            residue_id += 1
-    return struct
-
-def PDB_trim(InDir, TemplatePDB, OutDir, chain="A", length=[179], template_start_id=[2]):
-    """
-    PDB structure trim to have same residues as the tamplate
-    """
-    # length=[179] # HLA1
-    # start_id=[2] # HLA1, 1i4f
-    # length = [80, 85] # HLA2
-    # template_start_id = [4,7] # HLA2, 1klu
-    # record = []
-
-    PepBuilder = PPBuilder()
-    parser = PDBParser(PERMISSIVE=True, QUIET=True)
-
-    TStruct = parser.get_structure("template", TemplatePDB)
-    TSeqs = PepBuilder.build_peptides(TStruct)
-    
-    aligner = PairwiseAligner()
-    aligner.gap_score = -10 # no gap wanted
-
-    for InPDB in os.listdir(InDir):
-        if InPDB.endswith(".pdb"):
-            print("trim:", InPDB)
-            InStruct = parser.get_structure("target", f"{InDir}/{InPDB}")
-            Seqs = PepBuilder.build_peptides(InStruct[0])
-            qends = []
-            qstarts = []
-            for i, chain_identifier in enumerate(chain):
-                InSeq = Seqs[i].get_sequence()
-                TSeq = TSeqs[i].get_sequence()
-            
-                starting_loc = InStruct[0][chain_identifier].child_list[0]._id[1] # index of the first residue
-                alignments = aligner.align(InSeq, TSeq)
-
-            ## === archive, stand-alone trim ===
-            # qstart = alignments[0].aligned[0][0][0] + starting_loc # alignment is 0-based, starting loc is 1-based
-            # qend = qstart + 178 # fixed length
-            #qend = alignments[0].aligned[0][-1][-1] # aligned portion
-            
-            ## === use with PDB_renumber ===
-                # qstart = starting_loc - alignments[0].aligned[0][0][0] + template_start_id[i] -1
-                qstart = starting_loc + alignments[0].aligned[1][0][0] - alignments[0].aligned[0][0][0] + template_start_id[i] -1
-                # starting loc is calibarated, for the 1st residue in template is not loc 1
-                qend = length[i]
-
-                qstarts.append(qstart)
-                qends.append(qend)
-                
-                # record.append([InPDB, chain_identifier, qstart, qend, qend-qstart+1])
-
-            OutPDB = InPDB
-
-            # InStruct = PDB_renumber(InStruct, qstart)
-            # extract(InStruct, chain, start_id, qends, f"{OutDir}/{OutPDB}") # HLA1
-            InStruct = PDB_renumber(InStruct, qstarts)
-            extract(InStruct, chain, [2,2], qends, f"{OutDir}/{OutPDB}")
-            #print(f"Trim file saved: {OutDir}/{OutPDB}, {qend-qstart+1}")
-            
-
-    # df = pd.DataFrame(record, columns=["FileName", "chain", "qstart", "qend", "length"])
-    # df.to_csv(OutCSV)
-
-    return
+        trimmed.append(trimmed_chain)
+    return pd.concat(trimmed)
 
 def PDB_trim(InDir, TemplatePDB, OutDir):
-    """
-    PDB structure trim to have same residues as the tamplate
-    """
+    # template struct object and chain info
+    Tstruct = PandasPdb().read_pdb(TemplatePDB)
+    Tinfo = _Seqinfo_from_struct(Tstruct)
+
+    aligner = PairwiseAligner()
+    aligner.gap_score = -10 # no gap wanted
+    aligner.target_left_open_gap_score = -5
+
+    for InPDB in glob.glob(f"{InDir}/*.pdb"):
+        # query struct and chain info
+        Qstruct = PandasPdb().read_pdb(InPDB)
+        Qinfo = _Seqinfo_from_struct(Qstruct)
+
+        # remove unwanted chains
+        for key in Qinfo:
+            if key not in Tinfo:
+                Qinfo.pop(key, None)
+
+        for chain in Tinfo:
+            Tseq = Tinfo[chain][2]
+            Qseq = Qinfo[chain][2]
+            alignments = aligner.align(Qseq, Tseq)
+            # start query position that matched with template
+            qstart = alignments[0].aligned[0][0][0] # 0 based and relative, the first resi is always 0
+            # qend = alignments[0].aligned[0][-1][-1]
+
+            # Qend
+            # Qinfo[chain][1] = Qinfo[chain][0] + qend # 1 based and indexed
+            Qinfo[chain][1] = qstart + Tinfo[chain][1] - Tinfo[chain][0] + 1 # fixed length
+            # Qstart
+            Qinfo[chain][0] = Qinfo[chain][0] + qstart
+            
+        Qstruct.df['ATOM'] = _trim_renumber_struct(Qstruct, Qinfo, Tinfo)# trimed as marked in query info, renumbered as the template
+        
+        Qstruct.to_pdb(f"{OutDir}/{Path(InPDB).name}", records=['ATOM'])
     
     return
 
@@ -195,7 +105,7 @@ def BB_RMSD(Qpdb, Rpdb):
 
     return rmsd
 
-def centroid_structure(InPDBDir):
+def _centroid_structure(InPDBDir):
     """
     find the structure that has least RMSD with other structures
     used as alignment reference
@@ -216,7 +126,7 @@ def centroid_structure(InPDBDir):
     RMSD_sum = RMSD_Mat.sum(axis=1)
     return RMSD_sum.idxmin()
 
-def alphaNbeta(InPDB, dssp_path=None):
+def _alphaNbeta(InPDB, dssp_path=None):
     """
     Extract alpha helix and beta sheets aa index of input PDB (1-based)
     Return string of index range
@@ -251,23 +161,43 @@ def alphaNbeta(InPDB, dssp_path=None):
 
     return anchor_index, anchor_range
 
-def PDB_align(InDir, OutDir, refPDB=None, SSAlign=False):
+def PDB_align(InDir, OutDir, refPDB=None, SSAlign=False, AddH_only=False):
     """
     Superimpose input PDBs to the reference PDB
-    if not specified, the centroid structure is used
+    if reference PDB not specified and use geomatric center alignment, the centroid structure is used
+    Hydrogens are added for Glycines
+    if AddH_only, no alignment is performed
     """
-    # Find the centroid structure as reference
+    def change_resname(df, resnum, changeto):
+        df.loc[df["residue_number"] == resnum, "residue_name"] = changeto
+        return df
+
+    def change_atomname(df, index, changeto):
+        df.at[index, "atom_name"] = changeto
+        return df
+
+    if not os.path.exists(OutDir):
+        print(f"Create directory for aligned PDBs: {OutDir}")
+        os.mkdir(OutDir)
+    
     if refPDB is None:
-        print("Reference structure is not specified\n\tSearching for centroid structure...")
-        refPDB = centroid_structure(InDir)
-        print(f"Centroid: {refPDB}")
+        if AddH_only:
+            refPDB = glob.glob(f"{InDir}/*.pdb")[0]
+
+        else:
+            # Find the centroid structure as reference
+            print("Reference structure is not specified\n\tSearching for centroid structure...")
+            refPDB = _centroid_structure(InDir)
+            print(f"Centroid: {refPDB}")
 
     if SSAlign:
-        _, RAchRange = alphaNbeta(refPDB)
+        _, RAchRange = _alphaNbeta(refPDB)
 
     cmd.load(refPDB, "template")
+    tmp = NamedTemporaryFile().name
 
     for InPDB in glob.glob(f"{InDir}/*.pdb"):
+        # =============== PyMOL: align and add H ================
         # print("align:", InPDB)
         cmd.load(InPDB, "target")
         cmd.h_add(selection="(resn 'GLY' and name 'CA')") # add hydrogen atoms for Glycine, especifically for crystal structures
@@ -275,21 +205,51 @@ def PDB_align(InDir, OutDir, refPDB=None, SSAlign=False):
         cmd.alter("(resn 'GLY' and name 'H02')", "name='2HA'")
         cmd.alter("(resn 'GLY' and name 'H03')", "name='2HA'")
 
-        if SSAlign: # align and superimpose based on secondary structures
-            _, TAchRange = alphaNbeta(InPDB)
+        if AddH_only:
+            pass
+
+        elif SSAlign: # align and superimpose based on secondary structures
+            _, TAchRange = _alphaNbeta(InPDB)
             cmd.align(f"target///{TAchRange}/CA", f"template///{RAchRange}/CA")
         
         else:
             cmd.align(f"target////CA", f"template////CA") # align and superimpose
 
-        cmd.save(f"{OutDir}/{Path(InPDB).name}", "target")
-        # print(f"Align file saved: {OutPDB}")
+        cmd.save(tmp, "target",0,'pdb')
         cmd.delete("target")
-    
+
+        # ================ biopandas: correct residue and atom name ==============
+        Qstruct = PandasPdb().read_pdb(tmp)
+        new_df = Qstruct.df['ATOM']
+        for residue in Qstruct.df['ATOM'].groupby('residue_number'):
+
+            if residue[1].iloc[0]["residue_name"] == "HIS":
+
+                if "HE2" in residue[1]['atom_name'].values:
+                    if "HD1" in residue[1]['atom_name'].values:
+                        change_resname(new_df, residue[0], "HIP") # H on both epsilon and delta N
+                    else:
+                        change_resname(new_df, residue[0], "HIE") # H on epsilon N only
+
+                else:
+                    change_resname(new_df, residue[0], "HID") # H on delta N only. By default HIS is HID
+
+            elif residue[1].iloc[0]["residue_name"] == "MSE":
+                change_resname(new_df, residue[0], "MET") # no partial charge value for MSE
+
+        # now residue is the last residue
+        idx = np.where(residue[1]['atom_name'].values == 'OXT')[0]
+        if idx:
+            change_atomname(new_df, residue[1].iloc[idx].index[0], "O") # Rosetta relax will automaticly change last Oxigen from O to OXT
+
+        Qstruct.df['ATOM'] = new_df
+        Qstruct.to_pdb(f"{OutDir}/{Path(InPDB).name}", records=["ATOM"])
+        
     cmd.delete("template")
+        
     return
 
-def PDB_to_csv(InDir, OutDir):
+def PDB_to_AtomCloud(InDir, OutDir):
     """
     Assign parameters like partial charge to each atom, and store dataframe into csv file
     """
@@ -306,54 +266,39 @@ def PDB_to_csv(InDir, OutDir):
         os.makedirs(OutDir)
 
     for InPDB in glob.glob(f"{InDir}/*.pdb"):
-        OutList = []
 
-        parser = PDBParser(QUIET=True)
+        pro = PandasPdb().read_pdb(InPDB)
+        ATOMS = pro.df["ATOM"]
+        # atom_coord = ATOMS[['x_coord', 'y_coord', 'z_coord']]
+        # ligand_coord = pro.df['HETATM'][['x_coord', 'y_coord', 'z_coord']]
 
-        TStruct = parser.get_structure("struct", InPDB)[0]
-        # i = 0 # used to record aa position
-        # pep_len = len(TStruct['A'])
-        for chain in TStruct:
-            for residue in chain:
-                # i += 1
-                # if i >= pep_len: # if the last one
-                #     break # remove the last amino acid, since ROSETTA tranforms last residue to C terminal variant
-                ResName = residue.resname
-                ResNum = residue.id[1]
-                
-                if ResName == "HIS": # distinguish three protonation states of histidine
-                    
-                    if residue.has_id("HE2"):
-                        
-                        if residue.has_id("HD1"):
-                            ResName2 = "HIP" # H on both epsilon and delta N
-                        else:
-                            ResName2 = "HIE" # H on epsilon N only
+        # atom to ligand distance is the minimum of atom to ligand-atom distances
+        # dist2ligand = cdist(atom_coord, ligand_coord, 'euclidean')
+        # depth = np.min(dist2ligand, axis=1)
 
-                    else:
-                        ResName2 = "HID" # H on delta N only. By default HIS is HID
+        # depth and acceptance are set to 1 initially
+        depth = accpt = np.ones((ATOMS.shape[0],1))
+        
+        # atomic partial charge and hydrophobicity
+        basic_info = ATOMS[["residue_name", "chain_id", "residue_number", "atom_name", "atom_number", "x_coord", "y_coord", "z_coord"]].to_numpy()
+        charge_hydro = []
+        for row in basic_info:
+            atom = row[3].lstrip(digits)
+            resi = row[0]
 
-                elif ResName == "MSE": # no partial charge value for MSE
-                    ResName = ResName2 = "MET"
-                
-                else:
-                    ResName2 = ResName
-                
-                for atom in residue:
-                    # Rosetta relax will automaticly change last Oxigen from O to OXT
-                    if atom.name == "OXT":
-                        atom.name = "O"
-                    # change Se in MSE to S
-                    elif atom.name == "SE":
-                        atom.name = "SD"
+            charge = ffcharge[resi][atom]
 
-                    X_coord, Y_coord, Z_coord = atom.coord[0:3]
-                    OutList.append([ResName, chain.id, ResNum, atom.name, atom.serial_number, X_coord, Y_coord, Z_coord
-                    , ffcharge[ResName2][atom.name.lstrip(digits)], ffhydro[ResName][atom.name.lstrip(digits)], 1])
+            if resi in ["HIE", "HIP", "HID"]: # change back to normal HIS
+                row[0] = resi = "HIS"
 
-        OutList = np.array(OutList)
+            hydro = np.nan if atom.startswith("H") else ffhydro[resi][atom] # hydrophobicity doesn't distinguish HIS types
+            
+            
+            charge_hydro.append([charge, hydro])
 
-        OutDF = pd.DataFrame(OutList, columns=["Residue", "Chain", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity", "Accept"])
+        OutList = np.hstack([basic_info, charge_hydro, depth, accpt])
+
+        OutDF = pd.DataFrame(OutList, columns=["Residue", "Chain", "ResNum", "Atom", "AtomNum", "X", "Y", "Z", "Charge", "Hydrophobicity", "Depth", "Accept"])
 
         OutDF.to_csv(f"{OutDir}/{Path(InPDB).stem}.csv", index=False)
 
@@ -361,6 +306,7 @@ def PDB_to_csv(InDir, OutDir):
 
 def CoarseGrain(InDAT, OutCGDAT):
     """
+    Coarse graining of single csv file
     center-of-mass of side chain
     """
     # if OutFile is None:
@@ -409,11 +355,13 @@ def CoarseGrain(InDAT, OutCGDAT):
 
 def PointCloudCG(DATDir, OutDir):
     """
+    Coarse graining of atom cloud files
+    ==================================
     Input: full atom DAT directory
     Output: coarse-grained DAT file
     """
     for InDAT in glob.glob(f"{DATDir}/*.csv"):
-        CoarseGrain(InDAT, f"{OutDir}/{Path(InDAT).stem}_CG.csv")
+        CoarseGrain(InDAT, f"{OutDir}/{Path(InDAT).name}")
 
     return
 
@@ -434,7 +382,7 @@ def PDBtoPointCloud(InputDir:Union[str, bytes, os.PathLike], AlignDir:Union[str,
     SSAlign:bool=False, RefPDB:Union[str, bytes, os.PathLike]=None)->None:
     """
     Turn PDB file into atom cloud
-    ====================
+    ==============================
     Input: Input directory that contains PDB files
     SSAlign: Do structure alignment based on residues that form secondary structures, alphahelixes and beta strands
     trim: Trim every input PDB files according to Reference PDB, the Reference must be specified
@@ -442,34 +390,46 @@ def PDBtoPointCloud(InputDir:Union[str, bytes, os.PathLike], AlignDir:Union[str,
     --------------------
     Output: Trimmed and aligned PDB files, CSV pointcloud files
     """
-    # ===== validate parameters =====
+    # ===== Trim =====
     # If trim, the RefPDB must be specified
-    # if trim, the TRIM dir must be specified
     if TrimDir:
+        print("Start trimming...")
         if not RefPDB:
             raise ValueError("If enable trim, a RefPDB must be specified")
         if not os.path.exists(TrimDir):
-            print(f"Create directory for trimmed PDBs: {TrimDir}")
-        PDB_trim()
+            os.mkdir(TrimDir)
+            print(f"\tCreate directory for trimmed PDBs: {TrimDir}")
+        PDB_trim(InputDir, RefPDB, TrimDir)
+        print(f"\t...Trimming done, saved files to {TrimDir}")
     
     # ===== Align =====
+    print("Start Aligning...")
     if not os.path.exists(AlignDir):
-        print(f"Create directory for aligned PDBs: {AlignDir}")
+        print(f"\tCreate directory for aligned PDBs: {AlignDir}")
         os.mkdir(AlignDir)
-    PDB_align(InputDir, AlignDir, refPDB=RefPDB, SSAlign=SSAlign)
+
+    if TrimDir:
+        PDB_align(TrimDir, AlignDir, refPDB=RefPDB, SSAlign=SSAlign)
+    else:
+        PDB_align(InputDir, AlignDir, refPDB=RefPDB, SSAlign=SSAlign)
+    print(f"\t...Aligning done, saved files to {AlignDir}")
 
     # ===== To point cloud =====
+    print("Start converting to atom cloud...")
     if not os.path.exists(PCDir):
-        print(f"Create directory for point cloud CSVs: {PCDir}")
+        print(f"\tCreate directory for atom cloud CSVs: {PCDir}")
         os.mkdir(PCDir)
-    PDB_to_csv(AlignDir, PCDir)
+    PDB_to_AtomCloud(AlignDir, PCDir)
+    print(f"\t...Convert to atom cloud done, saved files to {PCDir}")
 
     # ===== Coarse graining =====
     if CGDir:
+        print("Start coarse graining...")
         if not os.path.exists(CGDir):
-            print(f"Create directory for coarse-grained point cloud CSVs: {CGDir}")
+            print(f"\tCreate directory for coarse-grained point cloud CSVs: {CGDir}")
             os.mkdir(CGDir)
         PointCloudCG(PCDir, CGDir)
+        print(f"\t...Coarse graining done, saved files to {CGDir}")
     return
 
 class assign_weight:
@@ -500,30 +460,33 @@ class assign_weight:
         self.df.to_csv(self.filename)
         return
 
-def Show_PointCloud(DATDir):
-    pointcloudlist = []
-    cmap = cm.ScalarMappable(cmap="coolwarm")
-    for InDAT in glob.glob(f"{DATDir}/*.csv"):
-        df = pd.read_csv(InDAT)
-        P1 = o3d.geometry.PointCloud()
-        coord = df[['X','Y','Z']].to_numpy()
-        weight = df['Weight'].to_numpy()
+# def Show_PointCloud(DATDir):
+#     pointcloudlist = []
+#     cmap = cm.ScalarMappable(cmap="coolwarm")
+#     for InDAT in glob.glob(f"{DATDir}/*.csv"):
+#         df = pd.read_csv(InDAT)
+#         P1 = o3d.geometry.PointCloud()
+#         coord = df[['X','Y','Z']].to_numpy()
+#         weight = df['Weight'].to_numpy()
 
-        color1 = cmap.to_rgba(weight)[:,0:3]
-        P1.points = o3d.utility.Vector3dVector(coord)
-        P1.colors = o3d.utility.Vector3dVector(color1)
-        pointcloudlist.append(P1)
+#         color1 = cmap.to_rgba(weight)[:,0:3]
+#         P1.points = o3d.utility.Vector3dVector(coord)
+#         P1.colors = o3d.utility.Vector3dVector(color1)
+#         pointcloudlist.append(P1)
 
-    o3d.visualization.draw_geometries(pointcloudlist)
-    return
+#     o3d.visualization.draw_geometries(pointcloudlist)
+#     return
 
-def CGDAT_dir_reweight(CGDAT_dir, weight_dict):
+def reweight_by_dict(InDir, WeightDict):
+    """
+    change residue weight in coarse grained csv file according to provided dict
+    """
     re_weight = assign_weight()
-    re_weight.by_resi_number(weight_dict)
+    re_weight.by_resi_number(WeightDict)
 
-    re_weight.weight
-    for CGDAT_file in glob.glob(f"{CGDAT_dir}/*.csv"):
+    for CGDAT_file in glob.glob(f"{InDir}/*.csv"):
 
         re_weight.read_CG_DAT(CGDAT_file)
         re_weight.update_weight()
         re_weight.save_CG_DAT()
+    return

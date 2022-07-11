@@ -44,8 +44,7 @@ class CGCalculator():
         
         # convert back HIS variants
         # resi = resi.reshape(-1).tolist()
-        resi = ["HIS" if s in ["HID", "HIE", "HIP"] else s for s in resi]
-        resi = np.array(resi)
+        # resi = np.array(resi)
 
         coord = DAT[['X', 'Y', 'Z']].values
         weight = DAT['Weight'].values.reshape((-1,1))
@@ -68,7 +67,7 @@ class CGCalculator():
         
         ResiPairSim_score = self.ResiPairSim(ResiA, ResiB)
 
-        SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.k * ResiPairSim_score * np.outer(WeightA, WeightB) )
+        SimScore = np.sum( np.reciprocal(np.cosh(self.sigma*cdist(CoordA, CoordB, "euclidean")))**self.k * ResiPairSim_score * np.sqrt(np.outer(WeightA, WeightB)) )
 
         return SimScore
 
