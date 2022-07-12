@@ -259,7 +259,7 @@ def correlation(ArrayA, ArrayB, show_plot=True):
         equation = f"Y = {round(slope, 3)}X{round(intercept, 3)}"
     # intercept = 0
     if show_plot:
-        plt.figure(figsize=(10,10))
+        plt.figure(figsize=(8,8))
         plt.xlim(0,1)
         plt.ylim(0,1)
         plt.scatter(xx, yy)
