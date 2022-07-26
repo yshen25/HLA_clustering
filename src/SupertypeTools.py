@@ -10,9 +10,10 @@ from scipy.cluster.hierarchy import dendrogram, to_tree
 import matplotlib.pyplot as plt
 import seaborn as sn
 from scipy.stats import linregress
+from scipy.optimize import linear_sum_assignment
 
 from .CalcScore import Calculator
-from .CG_metric import CGCalculator
+from .CG_metric import CG_SD_Calculator
 
 from Bio import SeqIO, Align
 from itertools import combinations
@@ -20,12 +21,12 @@ from itertools import combinations
 # from sklearn.linear_model import LinearRegression
 
 # ==== Calculating distance matrix ====
-def CalcMat(DATDir, AlleleListFile, contact, weight):
+def CalcMat(DATDir, AlleleListFile):
     """
     Using all-atom distance metric
     """
 
-    calc = Calculator(DATDir, AlleleListFile, ContactResi=contact, ResiWeight=weight)
+    calc = Calculator(DATDir, AlleleListFile)
 
     calc.CalcDist()
 
@@ -33,7 +34,7 @@ def CalcMat(DATDir, AlleleListFile, contact, weight):
 
 def CGCalcMat(CGDATDir, AlleleListFile, SimMtx="Grantham", sigma=None, k=None, DistMat_output=None, Standardize:bool=False):
     """
-    Using coarse-grained distance metric
+    Calculte pairwise structure distance matrix using coarse-grained distance metric
     ====================================
     Input:
         CGDATDir: Directory of coarse-grained HLA structures
@@ -46,17 +47,34 @@ def CGCalcMat(CGDATDir, AlleleListFile, SimMtx="Grantham", sigma=None, k=None, D
     Output:
         Distance_matrix
     """
-    metric = CGCalculator(SimilarityMatrix=SimMtx)
+    metric = CG_SD_Calculator(SimilarityMatrix=SimMtx)
     if sigma:
         metric.sigma = sigma
 
     if k:
         metric.k = k
 
-    metric.CalcDist(CGDATDir, AlleleListFile)
+    metric.CalcDistMtx(CGDATDir, AlleleListFile)
 
     if Standardize:
         metric.DistMat = (metric.DistMat - metric.DistMat.min().min()) / (metric.DistMat.max().max() - metric.DistMat.min().min())
+
+    if DistMat_output:
+        metric.SaveDist(DistMat_output)
+
+    return metric.DistMat
+
+def CGAnchorMat(CGDATDir, anchor_dict:dict, AlleleListFile=None, SimMtx="Grantham", sigma=None, k=None, DistMat_output=None, CGAnchorDir="HLA1_models/CG_DAT"):
+    
+    metric = CG_SD_Calculator(SimilarityMatrix=SimMtx)
+    
+    if sigma:
+        metric.sigma = sigma
+
+    if k:
+        metric.k = k
+    
+    metric.CalcAnchorDist(CGDATDir, anchor_dict, AlleleListFile, anchor_Dir=CGAnchorDir)
 
     if DistMat_output:
         metric.SaveDist(DistMat_output)
@@ -83,8 +101,24 @@ def MSAMat(InFile, scale=1):
 
     return DistMat
 
-# ==== Clustering ====
-def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, centroid=False, color_threshold=None):
+# ======= Clustering =======
+def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None, outtree=None, plot_dendro=False, color_threshold=None):
+    """
+    Hierarchical clustering based on square pairwise distance matrix
+    ================================
+    Input:
+        Mat: pairwise distance matrix
+        N (optional): number of clusters, one (and only one) of N and threshold must be provided
+        square (optional): if input matrix is square matrix (True) or lower triangular matrix (False)
+        L (optional): linkage, default = 'complete'
+        threshold (optional): distance threshold for a cluster, one (and only one) of N and threshold must be provided
+        outtree (optional): file name for output newick tree file
+        plot_dendro (optional): if draw dendrogram
+        color_threshold (optional): distance threshold for coloring branches as a cluster in dendrogram
+
+    Output:
+        (clustering_result, tree_label_order, cluster_centroids)
+    """
     if not square:
         Mat = Mat.add(Mat.T, fill_value=0)
     model = AgglomerativeClustering(n_clusters=N, affinity='precomputed', linkage=L, distance_threshold=threshold, compute_distances=True, compute_full_tree=True).fit(Mat)
@@ -95,15 +129,28 @@ def hierarchical_cluster(Mat, N=None, square=False, L='complete', threshold=None
     if plot_dendro:
         order = plot_dendrogram(model, None, Mat.index, color_threshold, outtree)
 
-    if centroid:
-        centers = []
-        for i in result.groupby(by=result):
-            group = i[1].index.to_numpy()
-            centers.append(Mat.loc[group,group].sum(axis=0).idxmin())
+    centers = []
+    for i in result.groupby(by=result):
+        group = i[1].index.to_numpy()
+        centers.append(Mat.loc[group,group].sum(axis=0).idxmin())
 
-        return result, order, pd.Series(range(len(centers)), index=centers)
+    return result, order, pd.Series(centers, index=range(len(centers)))
 
-    return result, order
+def NearestNeighbor_cluster(Mat:pd.DataFrame, anchor_dict:dict) -> pd.DataFrame :
+    """
+    Nearest neighbor clustering based on distances to anchor alleles
+    ================================
+    Input:
+        Mat: distance matrix to specified anchor structures
+        anchor_dict: dictionary specifying anchor alleles and represented supertypes
+
+    Output:
+        DataFrame of target allele, nearest anchor allele, and clustering result
+    """
+    NN_cluster = Mat.T.idxmin().to_frame(name="Nearest_anchor")
+    NN_cluster["Cluster"] = NN_cluster["Nearest_anchor"].map(anchor_dict)
+
+    return NN_cluster
 
 def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, square=False, MinSample=5):
     # Mat = pd.read_csv(InCSV, index_col=0)
@@ -115,7 +162,7 @@ def DBSCAN_cluster(Mat:pd.DataFrame, epsilon:float, square=False, MinSample=5):
 
     return result
 
-# ==== Visualization tools ====
+# ======= Visualization tools =======
 def dist_heatmap(Mat, square=True, order=None, size=(10,10), label=False, line=False, labelsize=8, **cbar_kw):
     """
     Visualize distance matrix as heatmap
@@ -142,7 +189,7 @@ def dist_heatmap(Mat, square=True, order=None, size=(10,10), label=False, line=F
         ticks = False
 
     g = sn.heatmap(Mat, square=True, xticklabels=ticks, yticklabels=ticks, cbar_kws=cbar_kw)
-    g.axes.tick_params(axis='both', labelsize=labelsize, pad=50)
+    g.axes.tick_params(axis='both', labelsize=labelsize, pad=10)
 
     # seperate lines between
     if line:
@@ -234,24 +281,16 @@ def correlation(ArrayA, ArrayB, show_plot=True):
     Input:
         ArrayA, ArrayB: 1-D array with same shape
         show_plot: if true, draw correlation plot
-    return:
+    
+    Output:
         (slope, intercept, rvalue)
     """
 
     # standardize to 0-1
     xx = (ArrayA - np.min(ArrayA)) / (np.max(ArrayA) - np.min(ArrayA))
-    yy = (ArrayB - np.min(ArrayB)) / (np.max(ArrayB) - np.min(ArrayB))
-
-    # xx = xx.reshape(-1, 1)
-    # yy = yy.reshape(-1, 1)
-
-    # rgs = LinearRegression(fit_intercept=True)
-    # rgs.fit(xx, yy)
-    # slope, intercept, rvalue = rgs.coef_[0][0], rgs.intercept_[0], rgs.score(xx, yy)    
+    yy = (ArrayB - np.min(ArrayB)) / (np.max(ArrayB) - np.min(ArrayB)) 
 
     slope, intercept, rvalue, _, _ = linregress(xx, yy)
-
-    # equation = f"Y = {round(slope, 3)}X"
 
     if intercept >= 0:
         equation = f"Y = {round(slope, 3)}X+{round(intercept, 3)}"
@@ -336,7 +375,8 @@ def Tuning_N(ClusterMat, Nmin, Nmax, RefMat=None, ClusterSilhouette=False, RefSi
         RefMat: Distance matrix that the performance accessment is based on, lower triangular form
         Nmin: starting number of clusters
         Nmax: ending number of clusters
-    Return:
+    
+    Output:
         (StructSSE, BASSE, StructSilhouette, BASilhouette)
     """
     ClusterSSE = []
@@ -353,7 +393,7 @@ def Tuning_N(ClusterMat, Nmin, Nmax, RefMat=None, ClusterSilhouette=False, RefSi
         # SilhouetteScore = 'NA'
         # BASilhouetteScore = 'NA'
 
-        cluster, _ = hierarchical_cluster(ClusterMat, square=True, N=i, L='complete', threshold=None)
+        cluster, _, _ = hierarchical_cluster(ClusterMat, square=True, N=i, L='complete', threshold=None)
         #complete average single
         groups = [group[1].index.tolist() for group in cluster.groupby(cluster)]
         # print(groups)
@@ -414,3 +454,76 @@ def elbow_plot(Struct_Mat, BA_Mat, Additional_Bar_group:list=None, Nmin=1, Nmax=
     plt.show()
 
     return
+
+# ========== stability ===========
+
+def _jaccard(member_index1:list, member_index2:list) -> float:
+    # calculate jaccard index between two groups
+    s1 = set(member_index1)
+    s2 = set(member_index2)
+    return len(s1.intersection(s2)) / len(s1.union(s2))
+
+def max_jaccard(clustering1:np.array, clustering2:np.array):
+    """
+    since cluster name might change, max jaccard is used to indicate matching cluster between
+    reference clustering (full sample) and bootstrap clustering
+    """
+    groups1 = np.unique(clustering1) # name of groups
+    groups2 = np.unique(clustering2)
+    jar_matrix = np.zeros((len(groups1),len(groups2))) # jaccard index matrix, storing jaccard index of all-to-all groups
+
+    for i in range(len(groups1)):
+        for j in range(len(groups2)):
+            members1 = np.where(clustering1 == i)[0] # index of group members
+            members2 = np.where(clustering2 == j)[0]
+            jar_matrix[i,j] = _jaccard(members1, members2)
+
+    row_idx, col_idx = linear_sum_assignment(jar_matrix, maximize=True) # find the solution with maximum sum
+    # print(jar_matrix, row_ind, col_ind)
+    # print(groups1[row_ind])
+    return row_idx, jar_matrix[row_idx, col_idx]
+
+def _bootstrap_sampling(sample_size:int, nb):
+    """
+    return index of samples
+    """
+    samples_idx = []
+    idx = [i for i in range(sample_size)]
+    for _ in range(nb):
+        x = np.random.choice(idx, sample_size, replace=True).tolist()
+        samples_idx.append(x)
+
+    return samples_idx
+
+def cluster_stability(dist_mat:pd.DataFrame, ref_clustering:pd.Series, NB:int=100, average:bool=True)->np.array:
+    """
+    returns average/step-wise jaccard index (similarity) of each cluster
+    """
+    # distance matrix is upper-triangle, change to square form
+    dist_mat = dist_mat.add(dist_mat.T, fill_value=0)
+    dist_mat = dist_mat.to_numpy()
+
+    ref_groups = np.unique(ref_clustering)
+    N_groups = len(ref_groups)
+    N_samples = dist_mat.shape[0]
+
+    jac_matrix = np.empty((NB, N_groups))
+    jac_matrix[:] = np.nan
+    bt_index = _bootstrap_sampling(N_samples, NB)
+    for i in range(NB):
+        index = bt_index[i]
+        dist_mat_bt = dist_mat[:,index][index,:]
+        dist_mat_bt = pd.DataFrame(dist_mat_bt)
+        ref_group = ref_clustering[index]
+
+        bt_group, _, _ = hierarchical_cluster(dist_mat_bt, square=True, N=N_groups)
+
+        group_idx, group_jac = max_jaccard(ref_group, bt_group)
+
+        jac_matrix[i, group_idx] = group_jac
+
+    if average:
+        return pd.Series(np.nanmean(jac_matrix, axis=0))
+
+    else:
+        return jac_matrix

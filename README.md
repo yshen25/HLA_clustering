@@ -36,13 +36,24 @@ The whole pipeline includes strucutre coarse graining, distance calculation, and
 > **Trim, align, parameterization, and coarse graining**
 
 High level functions are in [src/PointCloud.py](src/PointCloud.py), demonstrated in [Structure_processing.ipynb](Structure_processing.ipynb).\
-Final coarse grained structures of populated HLA class I alleles are in [HLA1_models/CG_DAT](HLA1_models/CG_DAT). If using custom structures, relaxing with back-bone constraint is highly encouraged.
+Final coarse grained structures of populated HLA class I alleles are in [HLA1_models/CG_DAT](HLA1_models/CG_DAT). If using custom structures, relaxing with back-bone constraint is strongly encouraged.
 
-**2. Structure distance calculation + hierarchical clustering**
-> **Calculate pariwise structural distances matrix between specified alleles, then perform hierarchical clustering**
+**2. Structure distance calculation**
+> **Calculate pariwise structural distances matrix between specified alleles**
 
-High level function are in [src/SupertypeTools.py](src/SupertypeTools.py), demonstrated in [Supertype_clustering.ipynb](Supertype_clustering.ipynb)\
-All structure files should be stored in the same directory. Demo list files specifying included alleles could be found at [Dataset_split](Dataset_split) directory.
+High level function are in [src/SupertypeTools.py](src/SupertypeTools.py), demonstrated in [Calculate_distances.ipynb](Calculate_distances.ipynb)\
+All structure files must be stored in the same directory. Demo list files specifying included alleles could be found at [Dataset_split](Dataset_split) directory.
+
+**3. Hierarchical clustering**
+> **Perform hierarchical clustering**
+
+High level function are in [src/SupertypeTools.py](src/SupertypeTools.py), demonstrated in [Supertype_clustering.ipynb](Supertype_clustering.ipynb)
+
+**4. Nearest Neighbor clustering**
+> **Perform nearest neighbor clustering according to specified anchor alleles that represent supertypes / sub-supertypes**
+
+High level function are in [src/SupertypeTools.py](src/SupertypeTools.py), demonstrated in [NearestNeighbor_clustering.ipynb](NearestNeighbor_clustering.ipynb)
+
 
 ## Jupyter notebooks:
 
@@ -50,7 +61,11 @@ All structure files should be stored in the same directory. Demo list files spec
 
   Parameter_tuning.ipynb: tuning shape parameters in structure distance metric
 
-  Supertype_clustering.ipynb: cluster HLA alleles into supertypes based on structure distances
+  Calculate_distances.ipynb: calculate structure distances
+
+  Supertype_clustering.ipynb: hierarchical cluster HLA alleles into supertypes / sub-supertypes based on pairwise structure distances
+
+  NearestNeighbor_clustering.ipynb: cluster HLA alleles into supertypes / sub-supertypes by nearest anchor alleles
 
 ## Folders content:
 
