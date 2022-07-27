@@ -12,7 +12,7 @@ import seaborn as sn
 from scipy.stats import linregress
 from scipy.optimize import linear_sum_assignment
 
-from .CalcScore import Calculator
+from .FA_metric import Calculator
 from .CG_metric import CG_SD_Calculator
 
 from Bio import SeqIO, Align
