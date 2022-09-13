@@ -81,9 +81,11 @@ def CGAnchorMat(CGDATDir, anchor_dict:dict, AlleleListFile=None, SimMtx="Grantha
 
     return metric.DistMat
 
-def MSAMat(InFile, scale=1):
+def MSAMat(InFile):
     """
     Similarity from pairwise sequence alignment
+    ===============================
+    InFile:Sequence file in FASTA format
     """
     allele_dict = SeqIO.to_dict(SeqIO.parse(InFile, "fasta"))
 
@@ -97,7 +99,7 @@ def MSAMat(InFile, scale=1):
     aligner.substitution_matrix = Align.substitution_matrices.load("BLOSUM62")
 
     for comb in AlleleComb_wo:
-        DistMat.loc[comb[1],comb[0]] = np.reciprocal(aligner.score(allele_dict[comb[1]].seq, allele_dict[comb[0]].seq)*scale)
+        DistMat.loc[comb[1],comb[0]] = np.reciprocal(aligner.score(allele_dict[comb[1]].seq, allele_dict[comb[0]].seq))
 
     return DistMat
 
@@ -274,12 +276,12 @@ def crop_mtx(Mtx:pd.DataFrame, order:list, flatten:bool=False):
 
     return Mtx
 
-def correlation(ArrayA, ArrayB, show_plot=True):
+def correlation(ArrayA, ArrayB, show_plot=True, xlabel="Structure distance", ylabel="Peptide binding specificity distance"):
     """
     Correlation plot between two array
     =============================
     Input:
-        ArrayA, ArrayB: 1-D array with same shape
+        ArrayA, ArrayB: 1-D array with same shape, A as x and B as y
         show_plot: if true, draw correlation plot
     
     Output:
@@ -309,8 +311,8 @@ def correlation(ArrayA, ArrayB, show_plot=True):
         plt.plot(x_vals, y_vals, '--')
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
-        plt.xlabel("Structure distance", fontsize=24)
-        plt.ylabel("Peptide binding specificity distance", fontsize=24)
+        plt.xlabel(xlabel, fontsize=24)
+        plt.ylabel(ylabel, fontsize=24)
 
         plt.text(0.02,0.95, equation, fontsize=24)
         plt.text(0.02,0.9, f"R = {round(rvalue, 3)}", fontsize=24)
