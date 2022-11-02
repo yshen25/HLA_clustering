@@ -2,6 +2,7 @@
 """
 High-level tools for HLA clustering
 """
+from turtle import width
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 import pandas as pd
 import numpy as np
@@ -276,7 +277,7 @@ def crop_mtx(Mtx:pd.DataFrame, order:list, flatten:bool=False):
 
     return Mtx
 
-def correlation(ArrayA, ArrayB, show_plot=True, xlabel="Structure distance", ylabel="Peptide binding specificity distance"):
+def correlation(ArrayA, ArrayB, show_plot=True, xlabel="SD", ylabel="PD"):
     """
     Correlation plot between two array
     =============================
@@ -295,27 +296,27 @@ def correlation(ArrayA, ArrayB, show_plot=True, xlabel="Structure distance", yla
     slope, intercept, rvalue, _, _ = linregress(xx, yy)
 
     if intercept >= 0:
-        equation = f"Y = {round(slope, 3)}X+{round(intercept, 3)}"
+        equation = f"Y = {round(slope, 2)}X+{round(intercept, 2)}"
     else:
-        equation = f"Y = {round(slope, 3)}X{round(intercept, 3)}"
+        equation = f"Y = {round(slope, 2)}X{round(intercept, 2)}"
     # intercept = 0
     if show_plot:
         plt.figure(figsize=(8,8))
         plt.xlim(0,1)
         plt.ylim(0,1)
-        plt.scatter(xx, yy)
+        plt.scatter(xx, yy, )
 
         x_vals = np.array([0, 1])
         y_vals = intercept + slope * x_vals
         # y_vals = slope * x_vals
-        plt.plot(x_vals, y_vals, '--')
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
-        plt.xlabel(xlabel, fontsize=24)
-        plt.ylabel(ylabel, fontsize=24)
+        plt.plot(x_vals, y_vals, '--', linewidth=3, c='k')
+        plt.xticks(fontsize=26)
+        plt.yticks(fontsize=26)
+        plt.xlabel(xlabel, fontsize=28)
+        plt.ylabel(ylabel, fontsize=28)
 
-        plt.text(0.02,0.95, equation, fontsize=24)
-        plt.text(0.02,0.9, f"R = {round(rvalue, 3)}", fontsize=24)
+        plt.text(0.02,0.95, equation, fontsize=30)
+        plt.text(0.02,0.89, f"R = {round(rvalue, 2)}", fontsize=30)
         plt.show()
     
     return (slope, intercept, rvalue)
