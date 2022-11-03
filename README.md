@@ -1,9 +1,9 @@
 # HLA_clustering
 > **Clustering HLA alleles based on binding groove structural similarity**
 
-The whole pipeline includes strucutre coarse graining, distance calculation, and hierarchical clustering. Structures are first coarse grained that the residues are represented by the center-of-mass of the sidechains. Then the pairwise distances are calculated using distance metric. Finally, alleles are hierarchically clustered into supertypes.
+The whole pipeline includes structure coarse graining, distance calculation, and hierarchical clustering. Structures are first coarse grained that the residues are represented by the center-of-mass of the sidechains. Then the pairwise distances are calculated using distance metric. Finally, alleles are hierarchically clustered into supertypes.
 
-## Pre-requisits
+## Prerequisites
 1. [Python](https://www.python.org/) = 3.8.X
 
     Other Python versions may also work, but are not tested
@@ -33,7 +33,7 @@ The whole pipeline includes strucutre coarse graining, distance calculation, and
 
 ## Run
 **1. Structure processing**
-> **Trim, align, parameterization, and coarse graining**
+> **Trim, align, parameterize, and coarse graining**
 
 High level functions are in [src/PointCloud.py](src/PointCloud.py), demonstrated in [Structure_processing.ipynb](Structure_processing.ipynb).\
 Final coarse grained structures of populated HLA class I alleles are in [HLA1_models/CG_DAT](HLA1_models/CG_DAT). If using custom structures, relaxing with back-bone constraint is strongly encouraged.
