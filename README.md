@@ -25,6 +25,7 @@ The whole pipeline includes structure coarse graining, distance calculation, and
     ```
     pip install PyQt5
     ```
+    You may need a lisence to use PyMOL package, please refer to [https://pymol.org/2/buy.html](https://pymol.org/2/buy.html)
     
 8. [Biopython](https://biopython.org/)
 9. [matplotlib](https://matplotlib.org/)
